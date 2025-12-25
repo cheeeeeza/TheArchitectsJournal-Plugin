@@ -1,0 +1,5 @@
+name: TheArchitectsJournal
+version: 1.0
+main: net.chae.TheArchitectsJournal.TheArchitectsJournal
+api-version: 1.21
+author: You
