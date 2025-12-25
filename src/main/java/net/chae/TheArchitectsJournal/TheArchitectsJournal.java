@@ -1,10 +1,7 @@
 package net.chae.TheArchitectsJournal;
 
-import net.chae.TheArchitectsJournal.items.YevasWand;
-import net.chae.TheArchitectsJournal.items.YukimurasGreatsword;
+import net.chae.TheArchitectsJournal.items.*;
 import org.bukkit.plugin.java.JavaPlugin;
-import net.chae.TheArchitectsJournal.items.ArhamsCrown;
-import net.chae.TheArchitectsJournal.items.HudeensJournal;
 
 public class TheArchitectsJournal extends JavaPlugin {
 
@@ -12,6 +9,7 @@ public class TheArchitectsJournal extends JavaPlugin {
     private HudeensJournal journal;
     private YevasWand wand;
     private YukimurasGreatsword greatsword;
+    private LichtsArmlet armlet;
 
     @Override
     public void onEnable() {
@@ -22,12 +20,14 @@ public class TheArchitectsJournal extends JavaPlugin {
         journal = new HudeensJournal(this);
         wand = new YevasWand(this);
         greatsword = new YukimurasGreatsword(this);
+        armlet = new LichtsArmlet(this);
 
         // Register recipes
         crown.registerRecipes();
         journal.registerRecipes();
         wand.registerRecipes();
         greatsword.registerRecipes();
+        armlet.registerRecipes();
 
         // Register events
         getServer().getPluginManager().registerEvents(crown, this);
