@@ -117,7 +117,11 @@ public class YevasWand implements Listener {
 
     // -- ITEM SPECIAL EFFECTS --
     public void giveYevasWandEffect(Player player) {
-        player.playSound(player.getLocation(), "minecraft:entity.warden.emerge", 1f, 1f);
+        player.playSound(player.getLocation(), "minecraft:entity.phantom.ambient", 1f, 1f);
+        player.playSound(player.getLocation(), Sound.BLOCK_BASALT_BREAK, 0.3f, 0.7f);       // Rock cracks
+        player.playSound(player.getLocation(), Sound.BLOCK_LAVA_POP, 0.4f, 0.9f);           // Lava bubbles
+        player.playSound(player.getLocation(), Sound.ENTITY_MAGMA_CUBE_SQUISH, 0.2f, 1.1f); // Magma squish
+        player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 0.1f, 0.6f);   // Distant boom
         player.showTitle(Title.title(
                 Component.text("The Final Show").color(NamedTextColor.DARK_PURPLE),
                 Component.text(" - The Catalyst of Chaos - ").color(NamedTextColor.DARK_GRAY)

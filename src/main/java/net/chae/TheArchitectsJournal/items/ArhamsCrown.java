@@ -123,7 +123,7 @@ public class ArhamsCrown implements Listener {
     public void giveArhamsCrownEffect(Player player) {
         player.playSound(player.getLocation(), "minecraft:entity.warden.emerge", 1f, 1f);
         player.showTitle(Title.title(
-                Component.text("The Coronation is Sealed").color(NamedTextColor.DARK_PURPLE),
+                Component.text("The Coronation").color(NamedTextColor.DARK_PURPLE),
                 Component.text(" - The Forsaken Prince - ").color(NamedTextColor.DARK_AQUA)
         ));
     }
