@@ -80,10 +80,10 @@ public class YevasWand implements Listener {
         ShapedRecipe recipe = new ShapedRecipe(YEVASWAND_RECIPE_KEY, YevasWand());
         recipe.shape(
                 " N ",
-                " E ",
+                " R ",
                 " T ");
         recipe.setIngredient('N', Material.BEACON);
-        recipe.setIngredient('E', Material.ENDER_EYE);
+        recipe.setIngredient('R', Material.RABBIT_FOOT);
         recipe.setIngredient('T', Material.TOTEM_OF_UNDYING);
         Bukkit.addRecipe(recipe);
     }

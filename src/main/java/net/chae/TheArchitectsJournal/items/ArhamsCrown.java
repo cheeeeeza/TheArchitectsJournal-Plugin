@@ -69,8 +69,10 @@ public class ArhamsCrown implements Listener {
     // RECIPES
     public void registerArhamsCrownRecipe() {
         ShapedRecipe recipe = new ShapedRecipe(ARHAMSCROWN_RECIPE_KEY, ArhamsCrown());
-        recipe.shape(" E ", "ENE");
-        recipe.setIngredient('N', Material.NETHERITE_INGOT);
+        recipe.shape(
+                " E ",
+                "ESE");
+        recipe.setIngredient('S', Material.SILENCE_ARMOR_TRIM_SMITHING_TEMPLATE);
         recipe.setIngredient('E', Material.ECHO_SHARD);
         Bukkit.addRecipe(recipe);
     }

@@ -65,11 +65,13 @@ public class LichtsArmlet implements Listener {
         ShapedRecipe recipe = new ShapedRecipe(LICHTSARMLET_RECIPE_KEY, LichtsArmlet());
         recipe.shape(
                 "GGG",
-                "TTT",
+                "NTH",
                 "GGG"
         );
         recipe.setIngredient('G', Material.GOLD_BLOCK);
+        recipe.setIngredient('N', Material.NAUTILUS_SHELL);
         recipe.setIngredient('T', Material.TRIDENT);
+        recipe.setIngredient('H', Material.HEART_OF_THE_SEA);
         Bukkit.addRecipe(recipe);
     }
 
