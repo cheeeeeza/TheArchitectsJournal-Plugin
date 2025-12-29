@@ -4,6 +4,9 @@ import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.Equippable;
 import io.papermc.paper.datacomponent.item.ItemAttributeModifiers;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import org.bukkit.entity.Tameable;
+import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
+import org.bukkit.event.entity.*;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -16,18 +19,16 @@ import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityResurrectEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.persistence.PersistentDataType;  // For rabbit.getPersistentDataContainer()
 import org.bukkit.NamespacedKey;
 
@@ -55,7 +56,7 @@ public class YevasWand implements Listener {
         registerYevasWandRecipeComplete();
     }
 
-    // -- ITEM ACHIEVEMENT --
+    // -- ITEM ACHIEVEMENT -----------------------------------------------------------------
     @EventHandler
     public void onWandCraft(CraftItemEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
@@ -75,13 +76,13 @@ public class YevasWand implements Listener {
         }
     }
 
-    // --ITEM RECIPES--
+    // --ITEM RECIPES--------------------------------------------------------------
     public void registerYevasWandRecipe() {
         ShapedRecipe recipe = new ShapedRecipe(YEVASWAND_RECIPE_KEY, YevasWand());
         recipe.shape(
-                " N ",
-                " R ",
-                " T ");
+                "N",
+                "R",
+                "T");
         recipe.setIngredient('N', Material.BEACON);
         recipe.setIngredient('R', Material.RABBIT_FOOT);
         recipe.setIngredient('T', Material.TOTEM_OF_UNDYING);
@@ -95,7 +96,7 @@ public class YevasWand implements Listener {
         Bukkit.addRecipe(recipe);
     }
 
-    // --ITEM CREATION--
+    // --ITEM CREATION------------------------------------------------------------------------
     public ItemStack YevasWand() {
         ItemStack wand = ItemStack.of(Material.STICK);
         wand.setData(DataComponentTypes.ITEM_MODEL, Key.key("chae", "yevas_wand"));
@@ -115,29 +116,39 @@ public class YevasWand implements Listener {
         return wand;
     }
 
-    // -- ITEM SPECIAL EFFECTS --
+    // -- ITEM SPECIAL EFFECTS ------------------------------------------------------------------
     public void giveYevasWandEffect(Player player) {
-        player.playSound(player.getLocation(), "minecraft:entity.phantom.ambient", 1f, 1f);
-        player.playSound(player.getLocation(), Sound.BLOCK_BASALT_BREAK, 0.3f, 0.7f);       // Rock cracks
-        player.playSound(player.getLocation(), Sound.BLOCK_LAVA_POP, 0.4f, 0.9f);           // Lava bubbles
-        player.playSound(player.getLocation(), Sound.ENTITY_MAGMA_CUBE_SQUISH, 0.2f, 1.1f); // Magma squish
-        player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 0.1f, 0.6f);   // Distant boom
+        player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 0.9f, 1.2f);
+        player.playSound(player.getLocation(), Sound.ITEM_TOTEM_USE, 0.4f, 1.6f);
+        player.playSound(player.getLocation(), Sound.ENTITY_ALLAY_AMBIENT_WITH_ITEM, 0.6f, 1.4f);
+        player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_HEARTBEAT, 1f, 0.6f);
+        player.playSound(player.getLocation(), Sound.AMBIENT_BASALT_DELTAS_MOOD, 1f, 1f);
+        player.playSound(player.getLocation(), Sound.AMBIENT_CRIMSON_FOREST_MOOD, 1f, 0.9f);
+
         player.showTitle(Title.title(
                 Component.text("The Final Show").color(NamedTextColor.DARK_PURPLE),
                 Component.text(" - The Catalyst of Chaos - ").color(NamedTextColor.DARK_GRAY)
         ));
     }
+    @EventHandler
+    public void onPlayerSwapHands(PlayerSwapHandItemsEvent event) {
+        Player player = event.getPlayer();
+        ItemStack newOffhand = event.getOffHandItem();
+        if (isYevasWand(newOffhand)) {
+            giveYevasWandEffect(player);
+        }
+    }
 
     @EventHandler
     public void onItemHeld(PlayerItemHeldEvent event) {
         Player player = event.getPlayer();
-        ItemStack offhand = player.getInventory().getItemInOffHand();
-        if (isYevasWand(offhand)) {
+        ItemStack hand = player.getInventory().getItemInMainHand();
+        if (isYevasWand(hand)) {
             startLevitationEffect(player); // Base effects
         }
     }
 
-    // **OFFHAND EQUIP** - FIXED!
+    // offhand Equipment
     @EventHandler
     public void onOffhandEquip(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
@@ -150,7 +161,6 @@ public class YevasWand implements Listener {
                 if (isYevasWand(offhand)) {
                     stepCount.put(player.getUniqueId(), 0); // Reset steps
                     startLevitationEffect(player);
-                    giveYevasWandEffect(player);
                 } else {
                     stopLevitationEffect(player);
                 }
@@ -232,7 +242,7 @@ public class YevasWand implements Listener {
     // Tracks last time each player used the immortality effect
     private final Map<UUID, Long> lastTotemUse = new HashMap<>();
     // 10 minutes in milliseconds
-    private static final long TOTEM_COOLDOWN = 10L * 60L * 1000L;
+    private static final long TOTEM_COOLDOWN = 3L * 60L * 1000L;
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerDeath(PlayerDeathEvent event) {
@@ -308,20 +318,6 @@ public class YevasWand implements Listener {
 
     private final Map<UUID, PlayerData> transformedPlayers = new HashMap<>();
 
-    private NamespacedKey rabbitKey;
-
-    private void restoreOriginal(UUID victimUUID, Location loc) {
-        PlayerData data = transformedPlayers.remove(victimUUID);
-        if (data != null && data.isPlayer) {
-            Player player = Bukkit.getPlayer(victimUUID);
-            if (player != null) {
-                player.teleport(loc);
-                player.setHealth(data.health);
-                player.setFoodLevel(data.foodLevel);
-            }
-        }
-    }
-
     private static class PlayerData {
         final double health;
         final int foodLevel;  // Only for players
@@ -336,18 +332,6 @@ public class YevasWand implements Listener {
         }
     }
 
-    private final Map<UUID, EntityRevertData> mobReverts = new HashMap<>();
-
-    private static class EntityRevertData {
-        final LivingEntity original;
-        final Location location;
-
-        EntityRevertData(LivingEntity original, Location location) {
-            this.original = original;
-            this.location = location;
-        }
-    }
-
     @EventHandler
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
         if (!(event.getDamager() instanceof Player attacker)) return;
@@ -356,57 +340,95 @@ public class YevasWand implements Listener {
         if (!isYevasWand(mainHand)) return;
 
         if (event.getEntity() instanceof Player victim) {
-            rabbitCursePlayer(victim, attacker, event);  // Players get potion effects
+            CursePlayer(victim, attacker, event);  // Players get potion effects
         } else if (event.getEntity() instanceof LivingEntity mob) {
             rabbitTransformMob(mob, attacker, event);    // Mobs spawn rabbits
         }
     }
 
-    private void rabbitCursePlayer(Player victim, Player attacker, EntityDamageByEntityEvent event) {
+    private Location findSafeLocation(World world, Location target, int maxScan) {
+        Location safeLoc = target.clone();
+
+        for (int yOffset = -maxScan; yOffset <= maxScan; yOffset++) {
+            safeLoc.setY(target.getY() + yOffset);
+            if (safeLoc.getBlock().getType().isSolid() &&
+                    safeLoc.clone().add(0, 1, 0).getBlock().getType().isAir() &&
+                    safeLoc.clone().add(0, 2, 0).getBlock().getType().isAir()) {
+                return safeLoc.clone().add(0, 1, 0);
+            }
+        }
+        return target;
+    }
+
+    private void CursePlayer(Player victim, Player attacker, EntityDamageByEntityEvent event) {
         if (Math.random() < 0.5) {
             event.setCancelled(true);
 
-            // RABBIT CURSE TITLE
+            // Store original stats
+            double originalHealth = victim.getHealth();
+            int originalFood = victim.getFoodLevel();
+            float originalSpeed = victim.getWalkSpeed();
+            Location originalLoc = victim.getLocation().clone();
+
+            // RABBIT CURSE TITLE + IMMEDIATE TELEPORT
             victim.showTitle(
                     Title.title(
-                            Component.text("Zimzalabim!").color(NamedTextColor.RED),
-                            Component.text("Hop away little bunny!").color(NamedTextColor.WHITE)
+                            Component.text("POOF!").color(NamedTextColor.RED),
+                            Component.text("Where'd you go?").color(NamedTextColor.WHITE)
                     ));
 
-            // PLAYER RABBIT STATS
+            // IMMEDIATE RANDOM TELEPORT within 167 block radius
+            double angle = Math.random() * 2 * Math.PI;
+            double distance = Math.random() * 167;
+            Location teleportLoc = originalLoc.clone().add(
+                    Math.cos(angle) * distance,
+                    0,
+                    Math.sin(angle) * distance
+            );
+
+            // Find safe Y level
+            World world = victim.getWorld();
+            teleportLoc = findSafeLocation(world, teleportLoc, 20);
+            victim.teleport(teleportLoc);
+
+            // Apply bunny debuffs for 5 seconds (shorter duration)
             victim.setMaxHealth(3.0);
             victim.setHealth(3.0);
             victim.setFoodLevel(10);
             victim.setWalkSpeed(0.25f);
 
-            victim.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST, 200, 4));
-            victim.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 200, 0));
-            victim.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 200, 1));
+            victim.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST, 100, 4));
+            victim.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 100, 0));
+            victim.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 100, 1));
 
-            // REVERT with title
+            // REVERT debuffs after 5 seconds
             new BukkitRunnable() {
                 @Override
                 public void run() {
-                    victim.showTitle(
-                            Title.title(
-                                    Component.text("Poof!").color(NamedTextColor.GREEN),
-                                    Component.text("No more hopping!").color(NamedTextColor.GRAY)
-                            )
-                    );
+                    if (!victim.isOnline()) return;
 
+                    // Restore original stats
                     victim.setMaxHealth(20.0);
-                    victim.setHealth(Math.min(20.0, victim.getHealth() * (20.0/3.0)));
-                    victim.setFoodLevel(20);
-                    victim.setWalkSpeed(0.2f);
+                    victim.setHealth(Math.min(20.0, originalHealth));
+                    victim.setFoodLevel(originalFood);
+                    victim.setWalkSpeed(originalSpeed);
                     victim.removePotionEffect(PotionEffectType.JUMP_BOOST);
                     victim.removePotionEffect(PotionEffectType.SLOWNESS);
                     victim.removePotionEffect(PotionEffectType.WEAKNESS);
                 }
-            }.runTaskLater(plugin, 200L);
+            }.runTaskLater(plugin, 100L);  // 5 seconds
 
-            victim.getWorld().playSound(victim.getLocation(), Sound.ENTITY_CHICKEN_EGG, 1f, 0.5f);
+            // Teleport + bunny sounds
+            victim.getWorld().playSound(teleportLoc, Sound.ENTITY_ENDERMAN_TELEPORT, 0.8f, 1.2f);
+            victim.getWorld().playSound(originalLoc, Sound.ENTITY_CHICKEN_EGG, 1f, 0.5f);
+            victim.getWorld().spawnParticle(Particle.PORTAL, teleportLoc, 50, 1, 1, 1, 0.5);
         }
     }
+
+    //MOB PLAYER CURSE ------------------------------------------------------------------------------------
+
+    private NamespacedKey rabbitKey;
+    private final Map<UUID, EntityRevertData> mobReverts = new HashMap<>();
 
     private void rabbitTransformMob(LivingEntity mob, Player attacker, EntityDamageByEntityEvent event) {
         if (Math.random() < 0.5) {
@@ -415,44 +437,66 @@ public class YevasWand implements Listener {
             Location loc = mob.getLocation();
             World world = mob.getWorld();
 
-            mob.remove();
-            Rabbit rabbit = (Rabbit) world.spawnEntity(loc, EntityType.RABBIT);
+            // **SAVE ALL MOB DATA**
+            boolean wasTamed = false;
+            UUID ownerUUID = null;
+            if (mob instanceof Tameable tameable) {
+                wasTamed = tameable.isTamed();
+                if (wasTamed) ownerUUID = tameable.getOwnerUniqueId();
+            }
 
-            // STORE original UUID on rabbit
+            // Store for revert
+            mobReverts.put(mob.getUniqueId(), new EntityRevertData(mob, loc, wasTamed, ownerUUID));
+            mob.remove();
+
+            Rabbit rabbit = (Rabbit) world.spawnEntity(loc, EntityType.RABBIT);
             rabbit.getPersistentDataContainer().set(rabbitKey, PersistentDataType.STRING, mob.getUniqueId().toString());
             rabbit.setRabbitType(Rabbit.Type.SALT_AND_PEPPER);
             rabbit.setHealth(3.0);
 
-            // Auto-revert ONLY if rabbit alive
+            // **REVERT AFTER 10s - PRESERVES TAMING**
             new BukkitRunnable() {
                 @Override
                 public void run() {
                     if (!rabbit.isDead()) {
-                        World revertWorld = loc.getWorld();
-                        LivingEntity original = (LivingEntity) revertWorld.spawnEntity(loc, mob.getType());
-                        original.setHealth(mob.getHealth());
-
+                        revertMob(mob.getUniqueId(), loc);
                     }
                 }
             }.runTaskLater(plugin, 200L);
-
-
         }
     }
 
+    // **UPDATED EntityRevertData** - stores taming info
+    private static class EntityRevertData {
+        final LivingEntity original;
+        final Location location;
+        final boolean wasTamed;
+        final UUID ownerUUID;
 
-    private void revertMob(UUID mobUUID, Location loc) {
-        EntityRevertData data = mobReverts.remove(mobUUID);
+        EntityRevertData(LivingEntity original, Location location, boolean wasTamed, UUID ownerUUID) {
+            this.original = original;
+            this.location = location;
+            this.wasTamed = wasTamed;
+            this.ownerUUID = ownerUUID;
+        }
+    }
+
+    private void revertMob(UUID originalUUID, Location loc) {
+        EntityRevertData data = mobReverts.remove(originalUUID);
         if (data != null) {
-            // Find the rabbit by UUID (from PersistentDataContainer or tracker)
-            Rabbit rabbit = getRabbitByUUID(mobUUID);
-
-            // ONLY revert if rabbit still exists
+            Rabbit rabbit = getRabbitByUUID(originalUUID);
             if (rabbit != null && !rabbit.isDead()) {
+                rabbit.remove();
+
                 World world = loc.getWorld();
                 LivingEntity original = (LivingEntity) world.spawnEntity(loc, data.original.getType());
                 original.setHealth(data.original.getHealth());
 
+                // **RESTORE TAMING**
+                if (data.wasTamed && data.ownerUUID != null && original instanceof Tameable tameable) {
+                    tameable.setTamed(true);
+                    tameable.setOwner(Bukkit.getOfflinePlayer(data.ownerUUID));
+                }
             }
         }
     }
@@ -472,8 +516,22 @@ public class YevasWand implements Listener {
         return null;
     }
 
+    // KILLER RABBIT IMMUNITY -------------------------------------------------------
+    @EventHandler
+    public void onKillerRabbitTarget(EntityTargetLivingEntityEvent event) {
+        if (!(event.getTarget() instanceof Player player)) return;
 
-    // wand checker
+        ItemStack offhand = player.getInventory().getItemInOffHand();
+
+        if (!isYevasWand(offhand)) return;
+
+        Entity attacker = event.getEntity();
+        if (attacker instanceof Rabbit rabbit && rabbit.getRabbitType() == Rabbit.Type.THE_KILLER_BUNNY) {
+            event.setCancelled(true);
+        }
+    }
+
+    // wand checker ----------------------------------------------------------------------------------------------
     private boolean isYevasWand(ItemStack item) {
         if (item == null) return false;
         Component name = item.getData(DataComponentTypes.ITEM_NAME);

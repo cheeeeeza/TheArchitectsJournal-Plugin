@@ -3,6 +3,7 @@ package net.chae.TheArchitectsJournal.items;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.Equippable;
 import io.papermc.paper.datacomponent.item.ItemAttributeModifiers;
+import io.papermc.paper.datacomponent.item.TooltipDisplay;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -14,9 +15,14 @@ import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.block.Block;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
+import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.inventory.*;
@@ -25,10 +31,16 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.entity.Blaze;  // Nether mobs
+import org.bukkit.entity.Ghast;
+import org.bukkit.entity.WitherSkeleton;
+import org.bukkit.entity.PiglinBrute;
+import org.bukkit.entity.PigZombie;
+import org.bukkit.entity.MagmaCube;
+import org.bukkit.entity.Enderman;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static net.kyori.adventure.text.format.TextColor.color;
 
@@ -52,7 +64,7 @@ public class YukimurasGreatsword implements Listener {
         registerYukimurasGreatswordRecipeComplete();
     }
 
-    // -- ITEM ACHIEVEMENT --
+    // ITEM ACHIEVEMENT ---------------------------------------------------------------------------------
     @EventHandler
     public void onGreatswordCraft(CraftItemEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
@@ -72,13 +84,13 @@ public class YukimurasGreatsword implements Listener {
         }
     }
 
-    // --ITEM RECIPES--
+    // --ITEM RECIPES---------------------------------------------------------------------------------
     public void registerYukimurasGreatswordRecipe() {
         ShapedRecipe recipe = new ShapedRecipe(YUKIMURASGREATSWORD_RECIPE_KEY, YukimurasGreatsword());
         recipe.shape(
-                " N ",
-                " N ",
-                " B "
+                "N",
+                "N",
+                "B"
         );
         recipe.setIngredient('N', Material.NETHERITE_BLOCK);
         recipe.setIngredient('B', Material.BLAZE_ROD);
@@ -96,9 +108,9 @@ public class YukimurasGreatsword implements Listener {
     private final Map<UUID, Long> lastEffectTime = new HashMap<>();
     private final Map<UUID, Boolean> fireImmunePlayers = new HashMap<>();
     private final Map<UUID, Long> lastExplosionTime = new HashMap<>();
+    private final Map<UUID, Long> netherTpCooldowns = new HashMap<>();  // ← NEW
 
-
-    // --ITEM CREATION--
+    // ITEM CREATION -------------------------------------------------------------------------------
     public ItemStack YukimurasGreatsword() {
 
         ItemStack greatsword = ItemStack.of(Material.STICK);
@@ -119,8 +131,6 @@ public class YukimurasGreatsword implements Listener {
     public ItemStack YukimurasGreatswordComplete() {
         ItemStack greatsword = ItemStack.of(Material.NETHERITE_SCRAP);
 
-        // item attributes
-        //attack speed boost
         ItemAttributeModifiers.Builder builder = ItemAttributeModifiers.itemAttributes();
 
         builder.addModifier(Attribute.ATTACK_SPEED,
@@ -141,10 +151,10 @@ public class YukimurasGreatsword implements Listener {
 
         builder.addModifier(Attribute.SAFE_FALL_DISTANCE,
                 new AttributeModifier(new NamespacedKey(plugin, "safe_fall_distance"), 7,
-                        AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.HAND));
+                        AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.OFFHAND));
 
         builder.addModifier(Attribute.ATTACK_DAMAGE,
-                new AttributeModifier(new NamespacedKey(plugin, "attack_damage"), 15,
+                new AttributeModifier(new NamespacedKey(plugin, "attack_damage"), 10,
                         AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.HAND));
 
         builder.addModifier(Attribute.BLOCK_BREAK_SPEED,
@@ -152,6 +162,11 @@ public class YukimurasGreatsword implements Listener {
                         AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.OFFHAND));
 
         greatsword.setData(DataComponentTypes.ATTRIBUTE_MODIFIERS, builder.build());
+
+        // Hide default attribute tooltip
+        TooltipDisplay.Builder tooltipBuilder = TooltipDisplay.tooltipDisplay();
+        tooltipBuilder.addHiddenComponents(DataComponentTypes.ATTRIBUTE_MODIFIERS);
+        greatsword.setData(DataComponentTypes.TOOLTIP_DISPLAY, tooltipBuilder.build());
 
         // name and colour
         greatsword.setData(DataComponentTypes.ITEM_MODEL, Key.key("chae", "yukimuras_greatsword"));
@@ -168,45 +183,153 @@ public class YukimurasGreatsword implements Listener {
         return greatsword;
     }
 
-    // -- ITEM SPECIAL EFFECTS --
+    // -- ITEM TITLE EFFECTS ----------------------------------------------------------------------------------------
     public void giveYukimurasGreatswordEffect(Player player) {
         //EDIT
         player.playSound(player.getLocation(), "minecraft:entity.blaze.ambient", 1f, 1f);
-        player.playSound(player.getLocation(), Sound.AMBIENT_CAVE, 0.5f, 0.8f);  // Deep rumble
+        player.playSound(player.getLocation(), Sound.AMBIENT_CRIMSON_FOREST_MOOD, 0.5f, 0.8f);  // Deep rumble
         player.playSound(player.getLocation(), Sound.ENTITY_WITHER_AMBIENT, 0.3f, 1.2f);
+        player.playSound(player.getLocation(), Sound.AMBIENT_NETHER_WASTES_MOOD, 1f, 0.9f);
+        player.playSound(player.getLocation(), Sound.AMBIENT_NETHER_WASTES_ADDITIONS, 1f, 0.9f);
+        player.playSound(player.getLocation(), Sound.ENTITY_BLAZE_SHOOT, 0.6f, 0.9f);
+
+
         player.showTitle(Title.title(
                 Component.text("The Everlasting War").color(NamedTextColor.DARK_PURPLE),
                 Component.text(" - The Netherborne Dweller - ").color(NamedTextColor.DARK_RED)
         ));
     }
 
-    // what happens when the item is being held
     @EventHandler
     public void onItemHeld(PlayerItemHeldEvent event) {
         Player player = event.getPlayer();
-        ItemStack mainHand = player.getInventory().getItemInMainHand();
-        UUID uuid = player.getUniqueId();
-        long now = System.currentTimeMillis();
 
-        boolean hasSword = isYukimurasGreatsword(mainHand);
+        // Item being switched TO
+        ItemStack newItem = player.getInventory().getItem(event.getNewSlot());
+        boolean hasSword = isYukimurasGreatsword(newItem);
 
-        // title vfx
-        if (hasSword && lastEffectTime.getOrDefault(uuid, 0L) < now - 5000) {
+        // Item being switched FROM
+        ItemStack oldItem = player.getInventory().getItem(event.getPreviousSlot());
+        boolean hadSword = isYukimurasGreatsword(oldItem);
+
+        if (hasSword && !hadSword) {
             giveYukimurasGreatswordEffect(player);
-            lastEffectTime.put(uuid, now);
         }
 
-        // fire n explosion res
+        // ───── PASSIVE FIRE RES─--------------------------------------------------------------
         if (hasSword) {
-            player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 999999, 0, true, false));
-            player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 999999, 5, true, false)); // Level 6 = explosion proof
+            player.addPotionEffect(new PotionEffect(
+                    PotionEffectType.FIRE_RESISTANCE,
+                    Integer.MAX_VALUE,
+                    0,
+                    true,
+                    false
+            ));
+
+            player.addPotionEffect(new PotionEffect(
+                    PotionEffectType.RESISTANCE,
+                    Integer.MAX_VALUE,
+                    5, // Level 6
+                    true,
+                    false
+            ));
         } else {
             player.removePotionEffect(PotionEffectType.FIRE_RESISTANCE);
             player.removePotionEffect(PotionEffectType.RESISTANCE);
         }
     }
 
-    // exuplosion
+    //NETHER MOB IMMUNITY ------------------------------------------------------------------------
+
+    @EventHandler
+    public void onNetherMobTarget(EntityTargetLivingEntityEvent event) {
+        if (!(event.getTarget() instanceof Player player)) return;
+
+        ItemStack mainHand = player.getInventory().getItemInMainHand();
+
+        if (!isYukimurasGreatsword(mainHand)) return;
+
+        Entity attacker = event.getEntity();
+        if (attacker instanceof Blaze ||
+                attacker instanceof Ghast ||
+                attacker instanceof WitherSkeleton ||
+                attacker instanceof PiglinBrute ||
+                attacker instanceof PigZombie ||
+                attacker instanceof MagmaCube ||
+                attacker instanceof Enderman) {
+        } event.setCancelled(true);
+    }
+
+    // TELEPORTATION DIMENSION ---------------------------------------------------------------------------
+    private int getSafeY(World world, int x, int z) {
+        for (int y = 120; y > 0; y--) {
+            Block block = world.getBlockAt(x, y, z);
+            if (block.getType() != Material.AIR) {
+                return y + 1;  // Spawn above highest block
+            }
+        }
+        return 80;  // Fallback
+    }
+
+    @EventHandler
+    public void onNetherTeleport(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+
+        if (!isYukimurasGreatsword(player.getInventory().getItemInMainHand())) return;
+        if (!player.isSneaking() || event.getAction() != Action.RIGHT_CLICK_AIR) return;
+
+        // Prevent spam (5s cooldown)
+        Long lastTp = netherTpCooldowns.get(player.getUniqueId());
+        if (lastTp != null && System.currentTimeMillis() - lastTp < 60000) {
+            player.sendActionBar(Component.text("§7Greatsword recharging...", NamedTextColor.GRAY));
+            return;
+        }
+        netherTpCooldowns.put(player.getUniqueId(), System.currentTimeMillis());
+
+        World currentWorld = player.getWorld();
+        World targetWorld = null;
+
+        // vice versa logic
+        if (currentWorld.getEnvironment() == World.Environment.NETHER) {
+            // Nether → Overworld (multiply coords x8)
+            targetWorld = Bukkit.getWorlds().stream()
+                    .filter(w -> w.getEnvironment() == World.Environment.NORMAL)
+                    .findFirst()
+                    .orElse(null);
+        } else {
+            // Overworld → Nether (divide coords /8)
+            targetWorld = Bukkit.getWorlds().stream()
+                    .filter(w -> w.getEnvironment() == World.Environment.NETHER)
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        if (targetWorld == null) {
+            player.sendMessage(Component.text("Target dimension not found!", NamedTextColor.RED));
+            return;
+        }
+
+        // coordinates
+        Location currentLoc = player.getLocation();
+        double targetX = currentWorld.getEnvironment() == World.Environment.NETHER
+                ? currentLoc.getX() * 8 : currentLoc.getX() / 8.0;
+        double targetZ = currentWorld.getEnvironment() == World.Environment.NETHER
+                ? currentLoc.getZ() * 8 : currentLoc.getZ() / 8.0;
+
+        // Find safe Y
+        int safeY = getSafeY(targetWorld, (int) targetX, (int) targetZ);
+
+        Location targetLoc = new Location(targetWorld, targetX, safeY, targetZ,
+                currentLoc.getYaw(), currentLoc.getPitch());
+
+        // Portal effects (no title)
+        player.getWorld().spawnParticle(Particle.PORTAL, player.getLocation(), 100, 1, 1, 1, 0.5);
+        player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 0.8f, 1.2f);
+
+        player.teleport(targetLoc);
+    }
+
+    // EXPLOSION --------------------------------------------------------------------------------------------
 
     @EventHandler
     public void onRightClickBlock(PlayerInteractEvent event) {
@@ -222,22 +345,127 @@ public class YukimurasGreatsword implements Listener {
 
         UUID uuid = player.getUniqueId();
         long now = System.currentTimeMillis();
-        if (lastExplosionTime.getOrDefault(uuid, 0L) > now - 500) {  // ✅ 5 SECONDS
-            player.sendMessage(Component.text("Slow down there Dweller").color(NamedTextColor.RED));
+        if (lastExplosionTime.getOrDefault(uuid, 0L) > now - 5000) {  // 0.5 sec CD
+            player.sendActionBar(Component.text("§7Greatsword recharging...", NamedTextColor.GRAY));
             return;
         }
 
         lastExplosionTime.put(uuid, now);
         event.setCancelled(true);
 
-        // ✅ FIXED PARTICLE + FULL DESTRUCTION
+        // VFX
         player.getWorld().createExplosion(loc, 4.0f, true, true);  // Block damage + fire
-        player.getWorld().spawnParticle(Particle.EXPLOSION, loc, 1);  // ✅ HUGE explosion
+        player.getWorld().spawnParticle(Particle.EXPLOSION, loc, 1);
         player.getWorld().playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 0.8f);
 
     }
 
-    // -- ITEM CHECKER --
+    // FIRE ASCPECT---------------------------------------------------------
+    @EventHandler
+    public void onGreatswordKill(EntityDeathEvent event) {
+        if (!(event.getEntity().getKiller() instanceof Player player)) return;
+
+        ItemStack mainHand = player.getInventory().getItemInMainHand();
+        if (!isYukimurasGreatsword(mainHand)) return;
+
+        LivingEntity victim = event.getEntity();
+
+        // FIRE ASPECT + COOKED MEAT
+        victim.setFireTicks(100);
+
+        // **PASS PLAYER TO METHOD**
+        List<ItemStack> cookedDrops = getCookedDrops(victim, player);
+        for (ItemStack cookedMeat : cookedDrops) {
+            victim.getWorld().dropItemNaturally(victim.getLocation(), cookedMeat);
+        }
+
+        // Fire effects
+        Location loc = victim.getLocation();
+        victim.getWorld().spawnParticle(Particle.FLAME, loc, 30, 0.5, 0.5, 0.5, 0.1);
+        victim.getWorld().playSound(loc, Sound.ITEM_FIRECHARGE_USE, 1f, 1.2f);
+    }
+
+    private List<ItemStack> getCookedDrops(LivingEntity entity, Player player) {
+        List<ItemStack> cookedDrops = new ArrayList<>();
+
+        // Animal → Cooked meat
+        if (entity instanceof Cow || entity instanceof MushroomCow) {
+            cookedDrops.add(new ItemStack(Material.COOKED_BEEF, 1));
+        } else if (entity instanceof Pig) {
+            cookedDrops.add(new ItemStack(Material.COOKED_PORKCHOP, 1));
+        } else if (entity instanceof Sheep) {
+            cookedDrops.add(new ItemStack(Material.COOKED_MUTTON, 1));
+        } else if (entity instanceof Chicken) {
+            cookedDrops.add(new ItemStack(Material.COOKED_CHICKEN, 1));
+        }
+
+        return cookedDrops;
+    }
+
+
+
+    // SMELTER ------------------
+    public void onBlockBreak(BlockBreakEvent event) {
+        Player player = event.getPlayer();
+        ItemStack offhand = player.getInventory().getItemInOffHand();
+
+        if (!isYukimurasGreatsword(offhand)) return;
+
+        Block block = event.getBlock();
+        Collection<ItemStack> drops = block.getDrops(player.getInventory().getItemInMainHand());
+
+        event.setDropItems(false);
+
+        // **IMMEDIATELY spawn smelted items to avoid timing issues**
+        for (ItemStack drop : drops) {
+            ItemStack smelted = getSmeltedItem(drop);
+            if (smelted != null && smelted.getType() != Material.AIR) {
+                block.getWorld().dropItemNaturally(
+                        block.getLocation().add(0.5, 0.5, 0.5),
+                        smelted
+                );
+            }
+        }
+
+        // Nether effects
+        Location loc = block.getLocation().add(0.5, 0.5, 0.5);
+        block.getWorld().spawnParticle(Particle.FLAME, loc, 20, 0.3, 0.3, 0.3, 0.05);
+        block.getWorld().playSound(loc, Sound.BLOCK_FIRE_EXTINGUISH, 0.5f, 1.5f);
+    }
+
+
+    // SMELTING LOGIC
+    private ItemStack getSmeltedItem(ItemStack item) {
+        Material type = item.getType();
+
+        // Ores → Ingots
+        if (type == Material.IRON_ORE) return new ItemStack(Material.IRON_INGOT, item.getAmount());
+        if (type == Material.GOLD_ORE) return new ItemStack(Material.GOLD_INGOT, item.getAmount());
+        if (type == Material.COPPER_ORE) return new ItemStack(Material.COPPER_INGOT, item.getAmount());
+        if (type == Material.DEEPSLATE_IRON_ORE) return new ItemStack(Material.IRON_INGOT, item.getAmount());
+        if (type == Material.DEEPSLATE_GOLD_ORE) return new ItemStack(Material.GOLD_INGOT, item.getAmount());
+        if (type == Material.DEEPSLATE_COPPER_ORE) return new ItemStack(Material.COPPER_INGOT, item.getAmount());
+        if (type == Material.NETHER_GOLD_ORE) return new ItemStack(Material.GOLD_NUGGET, item.getAmount() * 2);
+
+        // Logs → Charcoal
+        if (type.name().endsWith("_LOG") || type.name().endsWith("_WOOD")) {
+            return new ItemStack(Material.CHARCOAL, item.getAmount());
+        }
+
+        // Sand → Glass
+        if (type == Material.SAND) return new ItemStack(Material.GLASS, item.getAmount());
+        if (type == Material.RED_SAND) return new ItemStack(Material.TNT, item.getAmount()); // Bonus!
+        if (type == Material.GRAVEL) return new ItemStack(Material.FLINT, item.getAmount());
+
+        // Raw ores → Ingots
+        if (type == Material.RAW_IRON_BLOCK) return new ItemStack(Material.IRON_BLOCK);
+        if (type == Material.RAW_GOLD_BLOCK) return new ItemStack(Material.GOLD_BLOCK);
+        if (type == Material.RAW_COPPER_BLOCK) return new ItemStack(Material.COPPER_BLOCK);
+
+        return item; // Return original if no smelt recipe
+    }
+
+    // -- ITEM CHECKER ---------------------------------------------------------------------------------------------------------
     private boolean isYukimurasGreatsword(ItemStack item) {
         if (item == null) return false;
         Component name = item.getData(DataComponentTypes.ITEM_NAME);

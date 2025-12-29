@@ -3,15 +3,18 @@ package net.chae.TheArchitectsJournal.items;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Sound;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.CraftItemEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapelessRecipe;
 import org.bukkit.inventory.meta.BookMeta;
@@ -551,4 +554,44 @@ public class HudeensJournal implements Listener {
 
         return journalItem;
     }
+
+    //special effects
+    // -- ITEM SPECIAL EFFECTS --
+    public void giveHudeensJournalEffect(Player player) {
+
+        // Subtle, ancient / scholarly ambience
+        player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 0.6f, 0.8f);
+        player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 0.5f, 0.7f);
+        player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.7f, 1.1f);
+        player.playSound(player.getLocation(), Sound.BLOCK_BEACON_AMBIENT, 0.2f, 0.6f);
+
+        // Title
+        player.showTitle(Title.title(
+                Component.text("The Knowledge of Fate").color(NamedTextColor.DARK_PURPLE),
+                Component.text("- The Realmcrafting Architect -").color(NamedTextColor.BLUE)
+        ));
+    }
+
+    @EventHandler
+    public void onJournalHeld(PlayerItemHeldEvent event) {
+        Player player = event.getPlayer();
+        ItemStack hand = player.getInventory().getItemInMainHand();
+
+        if (isHudeensJournal(hand)) {
+            giveHudeensJournalEffect(player);
+        }
+    }
+
+    //item checker
+    private boolean isHudeensJournal(ItemStack item) {
+        if (item == null || item.getType() != Material.WRITTEN_BOOK) return false;
+        if (!item.hasItemMeta()) return false;
+
+        return Component.text("Hudeen's Journal", NamedTextColor.YELLOW)
+                .equals(item.getData(DataComponentTypes.ITEM_NAME));
+    }
+
+
+
+
 }

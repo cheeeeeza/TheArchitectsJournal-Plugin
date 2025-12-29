@@ -4,11 +4,13 @@ import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.Equippable;
 import io.papermc.paper.datacomponent.item.ItemAttributeModifiers;
+import io.papermc.paper.datacomponent.item.TooltipDisplay;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.title.Title;
 import org.bukkit.*;
+import io.papermc.paper.datacomponent.item.ItemLore;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.attribute.*;
@@ -17,10 +19,13 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
+import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.inventory.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.Vector;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -66,7 +71,7 @@ public class ArhamsCrown implements Listener {
         }
     }
 
-    // RECIPES
+    // RECIPES -------------------------------------------------------
     public void registerArhamsCrownRecipe() {
         ShapedRecipe recipe = new ShapedRecipe(ARHAMSCROWN_RECIPE_KEY, ArhamsCrown());
         recipe.shape(
@@ -84,7 +89,9 @@ public class ArhamsCrown implements Listener {
         Bukkit.addRecipe(recipe);
     }
 
-    // ITEMS
+    // RECIPES -------------------------------------------------------
+
+    // ITEMS ------------------------------------------------------------
     public ItemStack ArhamsCrown() {
         ItemStack crown = ItemStack.of(Material.STICK);
         crown.setData(DataComponentTypes.ITEM_MODEL, Key.key("chae", "arhams_crown"));
@@ -102,6 +109,7 @@ public class ArhamsCrown implements Listener {
         builder.addModifier(Attribute.MAX_HEALTH,
                 new AttributeModifier(new NamespacedKey(plugin, "max_health"), 20,
                         AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.HEAD));
+
         builder.addModifier(Attribute.ATTACK_KNOCKBACK,
                 new AttributeModifier(new NamespacedKey(plugin, "attack_knockback"), 1.5,
                         AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.HEAD));
@@ -111,9 +119,22 @@ public class ArhamsCrown implements Listener {
         builder.addModifier(Attribute.KNOCKBACK_RESISTANCE,
                 new AttributeModifier(new NamespacedKey(plugin, "knockback_resistance"), 1,
                         AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.HEAD));
+
+        builder.addModifier(Attribute.ATTACK_DAMAGE,
+                new AttributeModifier(new NamespacedKey(plugin, "attack_damage"), 6,
+                        AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.HEAD));
+
         crown.setData(DataComponentTypes.ATTRIBUTE_MODIFIERS, builder.build());
 
         crown.setData(DataComponentTypes.ITEM_MODEL, Key.key("chae", "arhams_crown"));
+
+        // descriptions
+
+        // Hide default attribute tooltip
+        TooltipDisplay.Builder tooltipBuilder = TooltipDisplay.tooltipDisplay();
+        tooltipBuilder.addHiddenComponents(DataComponentTypes.ATTRIBUTE_MODIFIERS);
+        crown.setData(DataComponentTypes.TOOLTIP_DISPLAY, tooltipBuilder.build());
+
         crown.setData(DataComponentTypes.ITEM_NAME, Component.text("Arham's Crown", NamedTextColor.DARK_AQUA));
         crown.setData(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
         crown.setData(DataComponentTypes.EQUIPPABLE, Equippable.equippable(EquipmentSlot.HEAD).build());
@@ -121,11 +142,17 @@ public class ArhamsCrown implements Listener {
         return crown;
     }
 
-    // EFFECTS
+    // ITEMS ------------------------------------------------------------
+
+    // SPECIAL TITLE EFFECTS -----------------------------------------------
     public void giveArhamsCrownEffect(Player player) {
         player.playSound(player.getLocation(), "minecraft:entity.warden.emerge", 1f, 1f);
+        player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_ANGRY, 0.7f, 0.9f);
+        player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_AMBIENT, 0.7f, 0.9f);
+        player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_DIG, 0.7f, 0.9f);
+
         player.showTitle(Title.title(
-                Component.text("The Coronation").color(NamedTextColor.DARK_PURPLE),
+                Component.text("The Sealed Coronation").color(NamedTextColor.DARK_PURPLE),
                 Component.text(" - The Forsaken Prince - ").color(NamedTextColor.DARK_AQUA)
         ));
     }
@@ -142,14 +169,14 @@ public class ArhamsCrown implements Listener {
         }
     }
 
-    // CROWN CHECKER
+    // CROWN CHECKER -----------------------------------------------------------
     private boolean isArhamsCrown(ItemStack item) {
         if (item == null) return false;
         Component name = item.getData(DataComponentTypes.ITEM_NAME);
         return name != null && name.equals(Component.text("Arham's Crown", NamedTextColor.DARK_AQUA));
     }
 
-    // SONIC BOOM
+    // SONIC BOOM ----------------------------------------------------------------
     @EventHandler
     public void onPlayerPunch(EntityDamageByEntityEvent event) {
         if (!(event.getDamager() instanceof Player attacker)) return;
@@ -164,8 +191,28 @@ public class ArhamsCrown implements Listener {
         sonicCooldowns.put(uuid, now);
         event.setCancelled(true);
         doSonicBoom(attacker, event.getEntity());
-    }
 
+        //DARKNESS PUNCH -----------------------------------------------------------
+        if (!(event.getEntity() instanceof LivingEntity victim)) return;
+
+        // Apply darkness effect to the victim (e.g. 10 seconds, amplifier 0)
+        victim.addPotionEffect(new PotionEffect(
+                PotionEffectType.DARKNESS, // darkness effect
+                200,                       // duration in ticks (200 = 10s)
+                0,                         // amplifier (0 = level 1)
+                false,                     // ambient
+                true                       // show particles
+        ));
+
+        // Play warden growl/roar sound for the victim
+        victim.getWorld().playSound(
+                victim.getLocation(),
+                Sound.ENTITY_WARDEN_ROAR, // or another warden sound
+                1.0f,                      // volume
+                1.0f                       // pitch
+        );
+    }
+     // SONIC BOOM ----------------------------------------------------------
     private void doSonicBoom(Player player, Entity targetEntity) {
         Location loc = player.getLocation();
         World world = loc.getWorld();
@@ -188,7 +235,7 @@ public class ArhamsCrown implements Listener {
         victim.setVelocity(direction.multiply(2.0).setY(0.5));
     }
 
-    // WARDEN SPAWN
+    // WARDEN SPAWN -----------------------------------------------------------
     @EventHandler
     public void onPlayerHit(EntityDamageByEntityEvent event) {
         if (!(event.getEntity() instanceof Player player) || !(event.getDamager() instanceof Player attacker)) return;
@@ -222,4 +269,23 @@ public class ArhamsCrown implements Listener {
         world.playSound(loc, Sound.ENTITY_WARDEN_EMERGE, 1f, 1f);
         world.spawnParticle(Particle.SQUID_INK, loc, 50, 1, 2, 1, 0.1);
     }
+
+    // WARDEN IMMUNITY -------------------------------------------------------
+    @EventHandler
+    public void onWardenTarget(EntityTargetLivingEntityEvent event) {
+        if (!(event.getTarget() instanceof Player player)) return;
+
+        ItemStack hand = player.getInventory().getItemInOffHand();
+
+        if (!isArhamsCrown(hand)) return;
+
+        Entity e = event.getEntity();
+        if (e instanceof Warden) {
+            event.setCancelled(true);
+        }
+    }
+
+
+
+
 }

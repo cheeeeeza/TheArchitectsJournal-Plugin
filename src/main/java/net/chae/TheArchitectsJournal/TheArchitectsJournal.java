@@ -10,6 +10,10 @@ public class TheArchitectsJournal extends JavaPlugin {
     private YevasWand wand;
     private YukimurasGreatsword greatsword;
     private LichtsArmlet armlet;
+    private EmmansLantern lantern;
+    private HudeensBlueprint blueprint;
+    private SerinasCloak cloak;
+    //private CezarsAmulet amulet;
 
     @Override
     public void onEnable() {
@@ -21,6 +25,10 @@ public class TheArchitectsJournal extends JavaPlugin {
         wand = new YevasWand(this);
         greatsword = new YukimurasGreatsword(this);
         armlet = new LichtsArmlet(this);
+        lantern = new EmmansLantern(this);
+        blueprint = new HudeensBlueprint(this);
+        cloak = new SerinasCloak(this);
+        //amulet = new CezarsAmulet(this);
 
         // Register recipes
         crown.registerRecipes();
@@ -28,12 +36,25 @@ public class TheArchitectsJournal extends JavaPlugin {
         wand.registerRecipes();
         greatsword.registerRecipes();
         armlet.registerRecipes();
+        lantern.registerRecipes();
+        blueprint.registerRecipes();
+        cloak.registerRecipes();
+        //amulet.registerRecipes();
 
         // Register events
         getServer().getPluginManager().registerEvents(crown, this);
         getServer().getPluginManager().registerEvents(journal, this);
         getServer().getPluginManager().registerEvents(wand, this);
         getServer().getPluginManager().registerEvents(greatsword, this);
+        getServer().getPluginManager().registerEvents(armlet, this);
+        getServer().getPluginManager().registerEvents(lantern, this);
+        getServer().getPluginManager().registerEvents(blueprint, this);
+        getServer().getPluginManager().registerEvents(cloak, this);
+        //getServer().getPluginManager().registerEvents(amulet, this);
+
+        //lichts armlet effects
+        armlet.startLichtsArmletPassives();
+
     }
 
     @Override
