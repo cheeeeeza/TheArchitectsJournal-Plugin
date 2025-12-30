@@ -2,8 +2,6 @@ package net.chae.TheArchitectsJournal.items;
 
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.Equippable;
-import io.papermc.paper.datacomponent.item.ItemAttributeModifiers;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.entity.Tameable;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.entity.*;
@@ -37,6 +35,7 @@ import java.time.Duration;
 import java.util.*;
 
 @SuppressWarnings("UnstableAPIUsage")
+
 public class YevasWand implements Listener {
     private final JavaPlugin plugin;
     private final Map<UUID, Integer> stepCount = new HashMap<>();
@@ -76,7 +75,7 @@ public class YevasWand implements Listener {
         }
     }
 
-    // --ITEM RECIPES--------------------------------------------------------------
+    // --ITEM RECIPES----------------------------------------------------------------------------
     public void registerYevasWandRecipe() {
         ShapedRecipe recipe = new ShapedRecipe(YEVASWAND_RECIPE_KEY, YevasWand());
         recipe.shape(
@@ -130,6 +129,7 @@ public class YevasWand implements Listener {
                 Component.text(" - The Catalyst of Chaos - ").color(NamedTextColor.DARK_GRAY)
         ));
     }
+
     @EventHandler
     public void onPlayerSwapHands(PlayerSwapHandItemsEvent event) {
         Player player = event.getPlayer();
@@ -139,6 +139,7 @@ public class YevasWand implements Listener {
         }
     }
 
+    // LEVITATION -------------------------------------------------------------------------------
     @EventHandler
     public void onItemHeld(PlayerItemHeldEvent event) {
         Player player = event.getPlayer();
@@ -148,7 +149,7 @@ public class YevasWand implements Listener {
         }
     }
 
-    // offhand Equipment
+    // offhand disable levi
     @EventHandler
     public void onOffhandEquip(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
@@ -237,7 +238,7 @@ public class YevasWand implements Listener {
         //player.removePotionEffect(PotionEffectType.SLOW_FALLING);
     }
 
-    //immortality curse
+    // IMMORTALITY CURSE ---------------------------------------------------------------------------
 
     // Tracks last time each player used the immortality effect
     private final Map<UUID, Long> lastTotemUse = new HashMap<>();
@@ -313,7 +314,7 @@ public class YevasWand implements Listener {
 
     }
 
-    // turn into rabbit effect
+    // RABBIT TURNING EFFECT -----------------------------------------------------------------------------
 
     private final Map<UUID, PlayerData> transformedPlayers = new HashMap<>();
 
@@ -465,7 +466,7 @@ public class YevasWand implements Listener {
         }
     }
 
-    // **UPDATED EntityRevertData** - stores taming info
+    // revert ent data
     private static class EntityRevertData {
         final LivingEntity original;
         final Location location;
@@ -515,14 +516,15 @@ public class YevasWand implements Listener {
         return null;
     }
 
-    // KILLER RABBIT IMMUNITY -------------------------------------------------------
+    // KILLER RABBIT IMMUNITY ----------------------------------------------------------------------------
     @EventHandler
     public void onKillerRabbitTarget(EntityTargetLivingEntityEvent event) {
         if (!(event.getTarget() instanceof Player player)) return;
 
         ItemStack offhand = player.getInventory().getItemInOffHand();
+        ItemStack mainhand = player.getInventory().getItemInMainHand();
 
-        if (!isYevasWand(offhand)) return;
+        if (!isYevasWand(offhand) && !isYevasWand(mainhand)) return;
 
         Entity attacker = event.getEntity();
         if (attacker instanceof Rabbit rabbit && rabbit.getRabbitType() == Rabbit.Type.THE_KILLER_BUNNY) {
@@ -530,14 +532,15 @@ public class YevasWand implements Listener {
         }
     }
 
-    // NETHER MOBS IMMUNITY
+    // NETHER MOBS IMMUNITY --------------------------------------------------------------------------------
     @EventHandler
     public void onNetherMobTarget(EntityTargetLivingEntityEvent event) {
         if (!(event.getTarget() instanceof Player player)) return;
 
-        ItemStack offHand = player.getInventory().getItemInOffHand();
+        ItemStack offhand = player.getInventory().getItemInOffHand();
+        ItemStack mainhand = player.getInventory().getItemInMainHand();
 
-        if (!isYevasWand(offHand)) return;
+        if (!isYevasWand(offhand) && !isYevasWand(mainhand)) return;;
 
         Entity attacker = event.getEntity();
         if (attacker instanceof Blaze ||
@@ -550,7 +553,7 @@ public class YevasWand implements Listener {
         } event.setCancelled(true);
     }
 
-    // wand checker ----------------------------------------------------------------------------------------------
+    // WAND CHECKER --------------------------------------------------------------------------------------------
     private boolean isYevasWand(ItemStack item) {
         if (item == null) return false;
         Component name = item.getData(DataComponentTypes.ITEM_NAME);
