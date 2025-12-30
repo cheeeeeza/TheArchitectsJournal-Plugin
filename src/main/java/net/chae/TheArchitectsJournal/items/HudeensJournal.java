@@ -1,6 +1,5 @@
 package net.chae.TheArchitectsJournal.items;
 
-import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.title.Title;
@@ -22,6 +21,7 @@ import io.papermc.paper.datacomponent.DataComponentTypes;
 import org.bukkit.plugin.java.JavaPlugin;
 
 @SuppressWarnings("UnstableAPIUsage")
+
 public class HudeensJournal implements Listener {
     private final JavaPlugin plugin;
     private NamespacedKey JOURNAL_RECIPE_KEY;
@@ -35,7 +35,7 @@ public class HudeensJournal implements Listener {
         JournalRecipe();
     }
 
-    // EVENT HANDLER - Achievement on craft
+    // ACHIEVEMENT ---------------------------------------------------------------------------------------------------
     @EventHandler
     public void onJournalCraft(CraftItemEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
@@ -61,7 +61,7 @@ public class HudeensJournal implements Listener {
         }
     }
 
-    // RECIPE
+    // RECIPE -------------------------------------------------------------------------------------------------------
     public void JournalRecipe() {
         ShapelessRecipe recipe = new ShapelessRecipe(JOURNAL_RECIPE_KEY, Journal());
         recipe.addIngredient(Material.COPPER_PICKAXE);
@@ -70,7 +70,7 @@ public class HudeensJournal implements Listener {
         Bukkit.addRecipe(recipe);
     }
 
-    // ITEM STACK
+    // ITEM STACK --------------------------------------------------------------------------------------------------
     public ItemStack Journal() {
         ItemStack journalItem = new ItemStack(Material.WRITTEN_BOOK);
         BookMeta meta = (BookMeta) journalItem.getItemMeta();
@@ -556,11 +556,8 @@ public class HudeensJournal implements Listener {
         return journalItem;
     }
 
-    //special effects
-    // -- ITEM SPECIAL EFFECTS --
+    // ITEM SPECIAL EFFECTS ------------------------------------------------------------------------------------
     public void giveHudeensJournalEffect(Player player) {
-
-        // Subtle, ancient / scholarly ambience
         player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 0.6f, 0.8f);
         player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 0.5f, 0.7f);
         player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.7f, 1.1f);
@@ -583,7 +580,7 @@ public class HudeensJournal implements Listener {
         }
     }
 
-    //item checker
+    // ITEM CHECKER --------------------------------------------------------------------------------------------
     private boolean isHudeensJournal(ItemStack item) {
         if (item == null || item.getType() != Material.WRITTEN_BOOK) return false;
         if (!item.hasItemMeta()) return false;
