@@ -3,11 +3,7 @@ package net.chae.TheArchitectsJournal.items;
 import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.Equippable;
-import io.papermc.paper.datacomponent.item.ItemAttributeModifiers;
-import io.papermc.paper.datacomponent.item.TooltipDisplay;
 import org.bukkit.event.EventPriority;
-import org.bukkit.inventory.ItemFlag;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import net.kyori.adventure.key.Key;
@@ -21,25 +17,20 @@ import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.*;
-//import org.bukkit.inventory.recipe.RecipeChoice;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
-
 import java.util.HashSet;
 import java.util.Set;
 import java.util.HashMap;
 import java.util.Map;
-
 import java.util.UUID;
 
 @SuppressWarnings("UnstableAPIUsage")
+
 public class SerinasCloak implements Listener {
     private final JavaPlugin plugin;
     private final Set<UUID> invisiblePlayers = new HashSet<>();
@@ -52,7 +43,7 @@ public class SerinasCloak implements Listener {
         this.SERINASCLOAK_RECIPE_KEY = new NamespacedKey(plugin, "serinascloak_recipe");
         this.SERINASCLOAKCOMPLETE_RECIPE_KEY = new NamespacedKey(plugin, "serinascloakcomplete_recipe");
 
-        // **15-SECOND CYCLE** (12s invisible + 3s visible)
+        // 15 second invisibility cycle
         new BukkitRunnable() {
             final Map<UUID, Long> blinkStartTime = new HashMap<>();
 
@@ -85,15 +76,15 @@ public class SerinasCloak implements Listener {
                     }
                 }
             }
-        }.runTaskTimer(plugin, 0L, 1L);  // ← **THIS LINE IS MISSING**
+        }.runTaskTimer(plugin, 0L, 1L);
     }
-
-
+        //register recipes
         public void registerRecipes() {
         registerSerinasCloakRecipe();
         registerSerinasCloakRecipeComplete();
     }
 
+    //ACHIEVEMENT ----------------------------------------------------------------------------------
     @EventHandler
     public void onCloakCraft(CraftItemEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
@@ -113,6 +104,7 @@ public class SerinasCloak implements Listener {
         }
     }
 
+    // RECIPES -------------------------------------------------------------------------------------
     public void registerSerinasCloakRecipe() {
         ShapedRecipe recipe = new ShapedRecipe(SERINASCLOAK_RECIPE_KEY, SerinasCloak());
         recipe.shape(
@@ -132,6 +124,7 @@ public class SerinasCloak implements Listener {
         Bukkit.addRecipe(recipe);
     }
 
+    // ITEMS ---------------------------------------------------------------------------------------
     public ItemStack SerinasCloak() {
         ItemStack cloak = ItemStack.of(Material.STICK);
         cloak.setData(DataComponentTypes.ITEM_MODEL, Key.key("chae", "serinas_cloak"));
@@ -151,6 +144,7 @@ public class SerinasCloak implements Listener {
         return cloak;
     }
 
+    // TITLE EFFECT --------------------------------------------------------------------------------
     public void giveSerinasCloakEffect(Player player) {
         player.playSound(player.getLocation(), Sound.ENTITY_ENDER_EYE_DEATH, 1f, 0.9f);
         player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 0.9f);
@@ -179,14 +173,10 @@ public class SerinasCloak implements Listener {
         }
     }
 
-
-
-    //TELEPORTATION ------------------------------------------------------------
+    //TELEPORTATION -------------------------------------------------------------------------------
 
     private final Map<UUID, Location> lastTeleportLocation = new HashMap<>();
 
-
-    // **ADD TELEPORT EFFECT** - Left/Right click teleport
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerInteract(PlayerInteractEvent event) {
 
@@ -239,6 +229,7 @@ public class SerinasCloak implements Listener {
         }
     }
 
+    //safety net for tp
     private double findSafeY(World world, Location target) {
         // Scan up/down 20 blocks for safe landing
         for (int y = -20; y <= 20; y++) {
@@ -253,7 +244,7 @@ public class SerinasCloak implements Listener {
         return target.getY(); // Fallback
     }
 
-    //ENDERMAN IMMUNITY ---------------------------------------------------------
+    //ENDERMAN IMMUNITY -----------------------------------------------------------------------------
     @EventHandler
     public void onEndermanTarget(EntityTargetLivingEntityEvent event) {
         if (!(event.getTarget() instanceof Player player)) return;
@@ -266,7 +257,7 @@ public class SerinasCloak implements Listener {
         }
     }
 
-    // CLOAK CHECKER -----------------------------------------------------------
+    // CLOAK CHECKER --------------------------------------------------------------------------------
     private boolean isSerinasCloak(ItemStack item) {
         if (item == null) return false;
         Component name = item.getData(DataComponentTypes.ITEM_NAME);
