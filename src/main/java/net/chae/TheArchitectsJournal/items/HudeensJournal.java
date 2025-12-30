@@ -55,6 +55,7 @@ public class HudeensJournal implements Listener {
         if (advancement != null) {
             AdvancementProgress progress = player.getAdvancementProgress(advancement);
             if (!progress.isDone()) {
+                player.getInventory().addItem(new ItemStack(Material.NETHER_STAR));
                 progress.awardCriteria("has_journal");
             }
         }

@@ -42,17 +42,21 @@ public class EmmansLantern implements Listener {
         this.EMMANSLANTERN_RECIPE_KEY = new NamespacedKey(plugin, "emmanslanter_recipe");
         this.EMMANSLANTERNCOMPLETE_RECIPE_KEY = new NamespacedKey(plugin, "emmanslanterncomplete_recipe");
 
+        // **SNEAK SPEED - ONLY IN CONSTRUCTOR** (already correct)
         new BukkitRunnable() {
             @Override
             public void run() {
                 for (Player p : Bukkit.getOnlinePlayers()) {
                     if (isEmmansLantern(p.getInventory().getItemInOffHand()) && p.isSneaking()) {
-                        p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 40, 4, true, false));
+                        p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 40, 9, true, false));
+                        //p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 40, 0, true, false));
+                        p.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 40, 1, true, false)); // Regen II
+                        p.setFoodLevel(Math.min(20, p.getFoodLevel() + 1));
+                        p.setSaturation(10.0f);
                     }
                 }
             }
-        }.runTaskTimer(plugin, 0L, 1L); // Every tick
-
+        }.runTaskTimer(plugin, 0L, 1L);
     }
 
     public void registerRecipes() {
@@ -200,26 +204,21 @@ public class EmmansLantern implements Listener {
         }
     }
 
-    // REPLACE the onInventoryClick event with this:
     @EventHandler
     public void onOffhandEquip(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
-        if (event.getRawSlot() != 45) return; // Offhand slot (not 40)
+        if (event.getRawSlot() != 45) return; // Offhand slot
 
-        // **SUPER SNEAK SPEED TASK** (runs every tick)
-        Bukkit.getScheduler().runTaskTimer(plugin, new BukkitRunnable() {
+        // **CORRECT: Use runTaskLater (ONE TIME)**
+        new BukkitRunnable() {
             @Override
             public void run() {
-                for (Player player : Bukkit.getOnlinePlayers()) {
-                    if (isEmmansLantern(player.getInventory().getItemInOffHand()) && player.isSneaking()) {
-                        player.addPotionEffect(new PotionEffect(
-                                PotionEffectType.SPEED, 40, 9, true, false)); // Speed 5
-                        player.addPotionEffect(new PotionEffect(
-                                PotionEffectType.SLOW_FALLING, 40, 0, true, false));
-                    }
+                ItemStack offhand = player.getInventory().getItemInOffHand();
+                if (isEmmansLantern(offhand)) {
+                    giveEmmansLanternEffect(player);
                 }
             }
-        }, 0L, 1L); // Start immediately, repeat every tick
+        }.runTaskLater(plugin, 1L); // ONE TIME next tick
     }
 
 

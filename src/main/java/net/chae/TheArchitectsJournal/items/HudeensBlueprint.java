@@ -190,14 +190,24 @@ public class HudeensBlueprint implements Listener {
         // 60 second cooldown
         Long lastDup = duplicateCooldowns.get(player.getUniqueId());
         if (lastDup != null && System.currentTimeMillis() - lastDup < 60000) {
-            player.sendActionBar(Component.text("§7Blueprint recharging...", NamedTextColor.GRAY));
+            player.sendActionBar(Component.text("§9✦ Blueprint Recovering... §9✦", NamedTextColor.GRAY));
             return;
         }
         duplicateCooldowns.put(player.getUniqueId(), System.currentTimeMillis());
 
-        // Duplicate main hand item (full stack)
+        // **HALVE HEALTH** - The ultimate cost of creation
+        double currentHealth = player.getHealth();
+        double newHealth = currentHealth / 2;
+        player.setHealth(newHealth);
+
+        player.playSound(player.getLocation(), Sound.ENTITY_WITHER_HURT, 0.8f, 0.6f);
+        player.getWorld().spawnParticle(Particle.DAMAGE_INDICATOR, player.getLocation().add(0, 1, 0), 20, 0.5, 0.5, 0.5, 0.15);
+
+        //duplication
+        int currentAmount = mainHand.getAmount();
+        int newAmount = Math.min(mainHand.getMaxStackSize(), currentAmount * 2);
         ItemStack duplicate = mainHand.clone();
-        duplicate.setAmount(Math.min(duplicate.getMaxStackSize(), 64));
+        duplicate.setAmount(newAmount);
 
         // Give to inventory
         HashMap<Integer, ItemStack> leftover = player.getInventory().addItem(duplicate);
@@ -206,9 +216,9 @@ public class HudeensBlueprint implements Listener {
         }
 
         // visual effects
-        player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 0.8f, 1.8f);
+        player.playSound(player.getLocation(), Sound.BLOCK_COPPER_GOLEM_STATUE_BREAK, 0.8f, 1.8f);
         player.getWorld().spawnParticle(Particle.ENCHANTED_HIT, player.getLocation().add(0, 1.5, 0), 15, 0.4, 0.4, 0.4, 0.05);
-        player.sendActionBar(Component.text("§9✦ Duplicated §b" + mainHand.getType().name() + " §9✦", NamedTextColor.DARK_BLUE));
+        player.sendActionBar(Component.text("§9✦ Essence Consumed §9✦", NamedTextColor.DARK_BLUE));
     }
 
 

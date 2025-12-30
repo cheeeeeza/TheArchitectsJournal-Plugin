@@ -152,7 +152,7 @@ public class ArhamsCrown implements Listener {
         player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_DIG, 0.7f, 0.9f);
 
         player.showTitle(Title.title(
-                Component.text("The Sealed Coronation").color(NamedTextColor.DARK_PURPLE),
+                Component.text("The Cursed Coronation").color(NamedTextColor.DARK_PURPLE),
                 Component.text(" - The Forsaken Prince - ").color(NamedTextColor.DARK_AQUA)
         ));
     }

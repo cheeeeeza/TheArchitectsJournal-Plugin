@@ -1,9 +1,15 @@
 package net.chae.TheArchitectsJournal.items;
 
+import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.Equippable;
 import io.papermc.paper.datacomponent.item.ItemAttributeModifiers;
 import io.papermc.paper.datacomponent.item.TooltipDisplay;
+import org.bukkit.event.EventPriority;
+import org.bukkit.inventory.ItemFlag;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -14,19 +20,29 @@ import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
-import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.*;
+//import org.bukkit.inventory.recipe.RecipeChoice;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
+
+import java.util.UUID;
 
 @SuppressWarnings("UnstableAPIUsage")
 public class SerinasCloak implements Listener {
     private final JavaPlugin plugin;
+    private final Set<UUID> invisiblePlayers = new HashSet<>();
 
     private NamespacedKey SERINASCLOAK_RECIPE_KEY;
     private NamespacedKey SERINASCLOAKCOMPLETE_RECIPE_KEY;
@@ -35,14 +51,49 @@ public class SerinasCloak implements Listener {
         this.plugin = plugin;
         this.SERINASCLOAK_RECIPE_KEY = new NamespacedKey(plugin, "serinascloak_recipe");
         this.SERINASCLOAKCOMPLETE_RECIPE_KEY = new NamespacedKey(plugin, "serinascloakcomplete_recipe");
+
+        // **15-SECOND CYCLE** (12s invisible + 3s visible)
+        new BukkitRunnable() {
+            final Map<UUID, Long> blinkStartTime = new HashMap<>();
+
+            @Override
+            public void run() {
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    if (!isSerinasCloak(player.getInventory().getHelmet())) {
+                        player.removePotionEffect(PotionEffectType.INVISIBILITY);
+                        blinkStartTime.remove(player.getUniqueId());
+                        continue;
+                    }
+
+                    UUID uuid = player.getUniqueId();
+                    long now = System.currentTimeMillis();
+
+                    if (!blinkStartTime.containsKey(uuid)) {
+                        blinkStartTime.put(uuid, now);
+                    }
+
+                    long cycleStart = blinkStartTime.get(uuid);
+                    long elapsed = now - cycleStart;
+
+                    if (elapsed < 12000) { // 12s invisible
+                        player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 40, 0, true, false));
+                    } else if (elapsed < 15000) { // 3s visible
+                        player.removePotionEffect(PotionEffectType.INVISIBILITY);
+                        player.getWorld().spawnParticle(Particle.PORTAL, player.getLocation().add(0, 1, 0), 10, 0.3, 0.3, 0.3, 0.01);
+                    } else {
+                        blinkStartTime.put(uuid, now); // Reset cycle
+                    }
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 1L);  // ← **THIS LINE IS MISSING**
     }
 
-    public void registerRecipes() {
+
+        public void registerRecipes() {
         registerSerinasCloakRecipe();
         registerSerinasCloakRecipeComplete();
     }
 
-    // ACHIEVEMENT - lantern craft
     @EventHandler
     public void onCloakCraft(CraftItemEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
@@ -62,20 +113,15 @@ public class SerinasCloak implements Listener {
         }
     }
 
-    // RECIPES -------------------------------------------------------
     public void registerSerinasCloakRecipe() {
         ShapedRecipe recipe = new ShapedRecipe(SERINASCLOAK_RECIPE_KEY, SerinasCloak());
         recipe.shape(
-                "SJC",
-                "OGB",
-                "AAA");
-        recipe.setIngredient('O', Material.OAK_LOG);
-        recipe.setIngredient('S', Material.SPRUCE_LOG);
-        recipe.setIngredient('J', Material.JUNGLE_LOG);
-        recipe.setIngredient('C', Material.CHERRY_LOG);
-        recipe.setIngredient('B', Material.BAMBOO_BLOCK);
-        recipe.setIngredient('G', Material.GLOW_BERRIES);
-        recipe.setIngredient('A', Material.ANVIL);
+                "C C",
+                "CEC",
+                "CPC");
+        recipe.setIngredient('C', Material.LEATHER);
+        recipe.setIngredient('E', Material.ENDER_EYE);
+        recipe.setIngredient('P', Material.POTION);
         Bukkit.addRecipe(recipe);
     }
 
@@ -86,63 +132,138 @@ public class SerinasCloak implements Listener {
         Bukkit.addRecipe(recipe);
     }
 
-    // RECIPES -------------------------------------------------------
-
-    // ITEMS ------------------------------------------------------------
     public ItemStack SerinasCloak() {
-        ItemStack crown = ItemStack.of(Material.GLOW_BERRIES);
-        crown.setData(DataComponentTypes.ITEM_MODEL, Key.key("chae", "emmans_lantern"));
-        crown.setData(DataComponentTypes.ITEM_NAME, Component.text("Emman's Lantern", NamedTextColor.WHITE));
-        crown.setData(DataComponentTypes.EQUIPPABLE, Equippable.equippable(EquipmentSlot.HAND).build());
-        crown.setData(DataComponentTypes.MAX_STACK_SIZE, 1);
-        return crown;
-    }
-
-    public ItemStack SerinasCloakComplete() {
-
         ItemStack cloak = ItemStack.of(Material.STICK);
-
-        ItemAttributeModifiers.Builder builder = ItemAttributeModifiers.itemAttributes();
-
-        cloak.setData(DataComponentTypes.ATTRIBUTE_MODIFIERS, builder.build());
-
-        cloak.setData(DataComponentTypes.ITEM_MODEL, Key.key("chae", "emmans_lantern"));
-
-        // descriptions
-
-        // Hide default attribute tooltip
-        TooltipDisplay.Builder tooltipBuilder = TooltipDisplay.tooltipDisplay();
-        tooltipBuilder.addHiddenComponents(DataComponentTypes.ATTRIBUTE_MODIFIERS);
-        cloak.setData(DataComponentTypes.TOOLTIP_DISPLAY, tooltipBuilder.build());
-
-        cloak.setData(DataComponentTypes.ITEM_NAME, Component.text("Serina's Cloak", NamedTextColor.DARK_GREEN));
-
-        cloak.setData(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
-
-        cloak.setData(DataComponentTypes.EQUIPPABLE, Equippable.equippable(EquipmentSlot.HAND).build());
-
+        cloak.setData(DataComponentTypes.ITEM_MODEL, Key.key("chae", "serinas_cloak"));
+        cloak.setData(DataComponentTypes.ITEM_NAME, Component.text("Serina's Cloak", NamedTextColor.WHITE));
+        cloak.setData(DataComponentTypes.EQUIPPABLE, Equippable.equippable(EquipmentSlot.HEAD).build());
         cloak.setData(DataComponentTypes.MAX_STACK_SIZE, 1);
-
         return cloak;
     }
 
-    // ITEMS ------------------------------------------------------------
+    public ItemStack SerinasCloakComplete() {
+        ItemStack cloak = ItemStack.of(Material.STICK);
+        cloak.setData(DataComponentTypes.ITEM_MODEL, Key.key("chae", "serinas_cloak"));
+        cloak.setData(DataComponentTypes.ITEM_NAME, Component.text("Serina's Cloak", NamedTextColor.DARK_GREEN));
+        cloak.setData(DataComponentTypes.EQUIPPABLE, Equippable.equippable(EquipmentSlot.HEAD).build());
+        cloak.setData(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
+        cloak.setData(DataComponentTypes.MAX_STACK_SIZE, 1);
+        return cloak;
+    }
 
-    // SPECIAL TITLE EFFECTS -----------------------------------------------
-    public void giveEmmansLanternEffect(Player player) {
+    public void giveSerinasCloakEffect(Player player) {
+        player.playSound(player.getLocation(), Sound.ENTITY_ENDER_EYE_DEATH, 1f, 0.9f);
+        player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 0.9f);
+        player.playSound(player.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 0.4f, 0.8f);
+        player.playSound(player.getLocation(), Sound.ENTITY_WITHER_AMBIENT, 0.4f, 0.8f);
+        player.playSound(player.getLocation(), Sound.ENTITY_WITHER_SPAWN, 0.3f, 1.2f);
+        player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 0.3f, 1.2f);
+        player.playSound(player.getLocation(), Sound.BLOCK_TRIAL_SPAWNER_AMBIENT_OMINOUS, 0.3f, 1.2f);
 
-        player.playSound(player.getLocation(),"minecraft:block.spore_blossom.place", 0.6f, 1.1f);
-        player.playSound(player.getLocation(),"minecraft:block.amethyst_block.chime", 0.8f, 1.3f);
-        player.playSound(player.getLocation(),"minecraft:block.cave_vines.pick_berries", 1f, 1.3f);
-        player.playSound(player.getLocation(),"minecraft:item.glow_ink_sac.use", 0.7f, 1.0f);
-        player.playSound(player.getLocation(),"minecraft:entity.axolotl.idle_air", 1f, 1.2f);
-        player.playSound(player.getLocation(),"minecraft:block.enchantment_table.use", 0.4f, 0.9f);
-        player.playSound(player.getLocation(), Sound.AMBIENT_CRIMSON_FOREST_ADDITIONS, 1f, 0.9f);
 
         player.showTitle(Title.title(
-                Component.text("The Impending Doom").color(NamedTextColor.DARK_PURPLE),
+                Component.text("The Final Omen").color(NamedTextColor.DARK_PURPLE),
                 Component.text(" - The Harrowing Harbinger - ").color(NamedTextColor.DARK_GREEN)
         ));
+    }
+
+    @EventHandler
+    public void onHelmetEquip(PlayerArmorChangeEvent event) {
+        if (event.getSlotType() != PlayerArmorChangeEvent.SlotType.HEAD) return;
+        ItemStack newItem = event.getNewItem();
+        if (newItem == null) return;
+
+        Component itemName = newItem.getData(DataComponentTypes.ITEM_NAME);
+        if (itemName != null && itemName.equals(Component.text("Serina's Cloak", NamedTextColor.DARK_GREEN))) {
+            giveSerinasCloakEffect(event.getPlayer());
+        }
+    }
+
+
+
+    //TELEPORTATION ------------------------------------------------------------
+
+    private final Map<UUID, Location> lastTeleportLocation = new HashMap<>();
+
+
+    // **ADD TELEPORT EFFECT** - Left/Right click teleport
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerInteract(PlayerInteractEvent event) {
+
+
+        Player player = event.getPlayer();
+        if (!isSerinasCloak(player.getInventory().getHelmet())) return;
+
+        Action action = event.getAction();
+        Location loc = player.getLocation();
+        World world = player.getWorld();
+
+        // **LEFT CLICK** - Random 5-20 blocks forward
+        if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
+            double distance = 5 + Math.random() * 15; // 5-20 range
+            Location target = loc.clone().add(loc.getDirection().multiply(distance));
+            target.setY(findSafeY(world, target));
+            player.teleport(target);
+            world.spawnParticle(Particle.PORTAL, loc, 20, 0.5, 0.5, 0.5, 0.2);
+            world.playSound(loc, Sound.ENTITY_ENDERMAN_TELEPORT, 0.7f, 1.5f);
+            player.sendActionBar(Component.text("§a✦ The Future... §a✦", NamedTextColor.DARK_GREEN));
+        }
+
+        // **RIGHT CLICK** - Shift = Return to previous position
+        else if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
+            if (player.isSneaking()) {
+                // **RETURN TO PREVIOUS POSITION**
+                Location previous = lastTeleportLocation.get(player.getUniqueId());
+                if (previous != null) {
+                    player.teleport(previous);
+                    world.spawnParticle(Particle.PORTAL, loc, 50, 1, 1, 1, 0.3);
+                    world.playSound(loc, Sound.ENTITY_ENDERMAN_TELEPORT, 0.8f, 1.2f);
+                    player.sendActionBar(Component.text("§a✦ Returned to the Past §a✦", NamedTextColor.DARK_GREEN));
+                } else {
+                    player.sendActionBar(Component.text("§7No timeline stored", NamedTextColor.DARK_GREEN));
+                }
+            } else {
+                // **ORIGINAL RANDOM TELEPORT** (no shift)
+                double distance = 25 + Math.random() * 30; // 25-55 range
+                Location target = loc.clone().add(loc.getDirection().multiply(distance));
+                target.setY(findSafeY(world, target));
+
+                // **STORE CURRENT POSITION** before teleport
+                lastTeleportLocation.put(player.getUniqueId(), loc.clone());
+
+                player.teleport(target);
+                world.spawnParticle(Particle.PORTAL, loc, 50, 1, 1, 1, 0.7);
+                world.playSound(loc, Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 0.8f);
+                player.sendActionBar(Component.text("§b✦ The Past has been Marked §b✦", NamedTextColor.DARK_GREEN));
+            }
+        }
+    }
+
+    private double findSafeY(World world, Location target) {
+        // Scan up/down 20 blocks for safe landing
+        for (int y = -20; y <= 20; y++) {
+            Location check = target.clone();
+            check.setY(target.getY() + y);
+            if (check.getBlock().getType().isSolid() &&
+                    check.clone().add(0, 1, 0).getBlock().getType().isAir() &&
+                    check.clone().add(0, 2, 0).getBlock().getType().isAir()) {
+                return check.getY() + 1;
+            }
+        }
+        return target.getY(); // Fallback
+    }
+
+    //ENDERMAN IMMUNITY ---------------------------------------------------------
+    @EventHandler
+    public void onEndermanTarget(EntityTargetLivingEntityEvent event) {
+        if (!(event.getTarget() instanceof Player player)) return;
+
+        // Check cloak in helmet slot
+        if (isSerinasCloak(player.getInventory().getHelmet())) {
+            if (event.getEntity() instanceof Enderman) {
+                event.setCancelled(true);
+            }
+        }
     }
 
     // CLOAK CHECKER -----------------------------------------------------------
@@ -151,8 +272,5 @@ public class SerinasCloak implements Listener {
         Component name = item.getData(DataComponentTypes.ITEM_NAME);
         return name != null && name.equals(Component.text("Serina's Cloak", NamedTextColor.DARK_GREEN));
     }
-
-
-
 
 }

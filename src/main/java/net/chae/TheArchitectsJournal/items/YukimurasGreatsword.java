@@ -281,7 +281,7 @@ public class YukimurasGreatsword implements Listener {
         // Prevent spam (5s cooldown)
         Long lastTp = netherTpCooldowns.get(player.getUniqueId());
         if (lastTp != null && System.currentTimeMillis() - lastTp < 60000) {
-            player.sendActionBar(Component.text("§7Greatsword recharging...", NamedTextColor.GRAY));
+            player.sendActionBar(Component.text("§9✦ Greatsword Recharging... §9✦", NamedTextColor.GRAY));
             return;
         }
         netherTpCooldowns.put(player.getUniqueId(), System.currentTimeMillis());
@@ -305,7 +305,7 @@ public class YukimurasGreatsword implements Listener {
         }
 
         if (targetWorld == null) {
-            player.sendMessage(Component.text("Target dimension not found!", NamedTextColor.RED));
+            player.sendMessage(Component.text("AIZA !!!! DEBUG !!! IF YOUR NOT AIZA AND YOU SEE THIS PLEASE TELL HER: Target dimension not found!", NamedTextColor.RED));
             return;
         }
 
@@ -346,7 +346,7 @@ public class YukimurasGreatsword implements Listener {
         UUID uuid = player.getUniqueId();
         long now = System.currentTimeMillis();
         if (lastExplosionTime.getOrDefault(uuid, 0L) > now - 5000) {  // 0.5 sec CD
-            player.sendActionBar(Component.text("§7Greatsword recharging...", NamedTextColor.GRAY));
+            player.sendActionBar(Component.text("§9✦ Greatsword Recharging... §9✦", NamedTextColor.GRAY));
             return;
         }
 
@@ -400,69 +400,6 @@ public class YukimurasGreatsword implements Listener {
         }
 
         return cookedDrops;
-    }
-
-
-
-    // SMELTER ------------------
-    public void onBlockBreak(BlockBreakEvent event) {
-        Player player = event.getPlayer();
-        ItemStack offhand = player.getInventory().getItemInOffHand();
-
-        if (!isYukimurasGreatsword(offhand)) return;
-
-        Block block = event.getBlock();
-        Collection<ItemStack> drops = block.getDrops(player.getInventory().getItemInMainHand());
-
-        event.setDropItems(false);
-
-        // **IMMEDIATELY spawn smelted items to avoid timing issues**
-        for (ItemStack drop : drops) {
-            ItemStack smelted = getSmeltedItem(drop);
-            if (smelted != null && smelted.getType() != Material.AIR) {
-                block.getWorld().dropItemNaturally(
-                        block.getLocation().add(0.5, 0.5, 0.5),
-                        smelted
-                );
-            }
-        }
-
-        // Nether effects
-        Location loc = block.getLocation().add(0.5, 0.5, 0.5);
-        block.getWorld().spawnParticle(Particle.FLAME, loc, 20, 0.3, 0.3, 0.3, 0.05);
-        block.getWorld().playSound(loc, Sound.BLOCK_FIRE_EXTINGUISH, 0.5f, 1.5f);
-    }
-
-
-    // SMELTING LOGIC
-    private ItemStack getSmeltedItem(ItemStack item) {
-        Material type = item.getType();
-
-        // Ores → Ingots
-        if (type == Material.IRON_ORE) return new ItemStack(Material.IRON_INGOT, item.getAmount());
-        if (type == Material.GOLD_ORE) return new ItemStack(Material.GOLD_INGOT, item.getAmount());
-        if (type == Material.COPPER_ORE) return new ItemStack(Material.COPPER_INGOT, item.getAmount());
-        if (type == Material.DEEPSLATE_IRON_ORE) return new ItemStack(Material.IRON_INGOT, item.getAmount());
-        if (type == Material.DEEPSLATE_GOLD_ORE) return new ItemStack(Material.GOLD_INGOT, item.getAmount());
-        if (type == Material.DEEPSLATE_COPPER_ORE) return new ItemStack(Material.COPPER_INGOT, item.getAmount());
-        if (type == Material.NETHER_GOLD_ORE) return new ItemStack(Material.GOLD_NUGGET, item.getAmount() * 2);
-
-        // Logs → Charcoal
-        if (type.name().endsWith("_LOG") || type.name().endsWith("_WOOD")) {
-            return new ItemStack(Material.CHARCOAL, item.getAmount());
-        }
-
-        // Sand → Glass
-        if (type == Material.SAND) return new ItemStack(Material.GLASS, item.getAmount());
-        if (type == Material.RED_SAND) return new ItemStack(Material.TNT, item.getAmount()); // Bonus!
-        if (type == Material.GRAVEL) return new ItemStack(Material.FLINT, item.getAmount());
-
-        // Raw ores → Ingots
-        if (type == Material.RAW_IRON_BLOCK) return new ItemStack(Material.IRON_BLOCK);
-        if (type == Material.RAW_GOLD_BLOCK) return new ItemStack(Material.GOLD_BLOCK);
-        if (type == Material.RAW_COPPER_BLOCK) return new ItemStack(Material.COPPER_BLOCK);
-
-        return item; // Return original if no smelt recipe
     }
 
     // -- ITEM CHECKER ---------------------------------------------------------------------------------------------------------

@@ -260,8 +260,7 @@ public class YevasWand implements Listener {
         // Cooldown check (10 minutes)
         if (now - lastUse < TOTEM_COOLDOWN) {
             long remaining = (TOTEM_COOLDOWN - (now - lastUse)) / 1000;
-            player.sendMessage(Component.text("Immortality's a curse! Not a Blessing. Did you really think it'll save you? HAHAHAHHAHAHAHA (" + remaining + "s)")
-                    .color(NamedTextColor.RED));
+            player.sendActionBar(Component.text("§9✦ Immortality is a Curse, not a Blessing §9✦", NamedTextColor.DARK_GRAY));
             return; // Let them die
         }
 
@@ -310,7 +309,7 @@ public class YevasWand implements Listener {
         player.playSound(player.getLocation(), Sound.ITEM_TOTEM_USE, 1f, 1f);
         world.playSound(loc, Sound.ENTITY_ENDERMAN_SCREAM, 0.5f, 0.8f);
 
-        player.sendMessage("You think you can simply die?");
+        player.sendActionBar(Component.text("§9✦ Death has Refused You §9✦", NamedTextColor.DARK_GRAY));
 
     }
 
@@ -437,7 +436,7 @@ public class YevasWand implements Listener {
             Location loc = mob.getLocation();
             World world = mob.getWorld();
 
-            // **SAVE ALL MOB DATA**
+            // saving mob data
             boolean wasTamed = false;
             UUID ownerUUID = null;
             if (mob instanceof Tameable tameable) {
@@ -492,7 +491,7 @@ public class YevasWand implements Listener {
                 LivingEntity original = (LivingEntity) world.spawnEntity(loc, data.original.getType());
                 original.setHealth(data.original.getHealth());
 
-                // **RESTORE TAMING**
+                // taming restoration kept
                 if (data.wasTamed && data.ownerUUID != null && original instanceof Tameable tameable) {
                     tameable.setTamed(true);
                     tameable.setOwner(Bukkit.getOfflinePlayer(data.ownerUUID));
@@ -529,6 +528,26 @@ public class YevasWand implements Listener {
         if (attacker instanceof Rabbit rabbit && rabbit.getRabbitType() == Rabbit.Type.THE_KILLER_BUNNY) {
             event.setCancelled(true);
         }
+    }
+
+    // NETHER MOBS IMMUNITY
+    @EventHandler
+    public void onNetherMobTarget(EntityTargetLivingEntityEvent event) {
+        if (!(event.getTarget() instanceof Player player)) return;
+
+        ItemStack offHand = player.getInventory().getItemInOffHand();
+
+        if (!isYevasWand(offHand)) return;
+
+        Entity attacker = event.getEntity();
+        if (attacker instanceof Blaze ||
+                attacker instanceof Ghast ||
+                attacker instanceof WitherSkeleton ||
+                attacker instanceof PiglinBrute ||
+                attacker instanceof PigZombie ||
+                attacker instanceof MagmaCube ||
+                attacker instanceof Enderman) {
+        } event.setCancelled(true);
     }
 
     // wand checker ----------------------------------------------------------------------------------------------
