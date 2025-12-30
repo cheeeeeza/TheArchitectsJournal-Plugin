@@ -20,6 +20,13 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.*;
 import org.bukkit.plugin.java.JavaPlugin;
+import net.chae.TheArchitectsJournal.items.ArhamsCrown;  // Replace with actual class names
+import net.chae.TheArchitectsJournal.items.LichtsArmlet;
+import net.chae.TheArchitectsJournal.items.YevasWand;
+import net.chae.TheArchitectsJournal.items.YukimurasGreatsword;
+import net.chae.TheArchitectsJournal.items.EmmansLantern;
+import net.chae.TheArchitectsJournal.items.HudeensBlueprint;
+import net.chae.TheArchitectsJournal.items.SerinasCloak;
 
 @SuppressWarnings("UnstableAPIUsage")
 public class CezarsAmulet implements Listener {
@@ -28,10 +35,27 @@ public class CezarsAmulet implements Listener {
     private NamespacedKey CEZARSAMULET_RECIPE_KEY;
     private NamespacedKey CEZARSAMULETCOMPLETE_RECIPE_KEY;
 
+    private ArhamsCrown crown;
+    private LichtsArmlet armlet;
+    private YevasWand wand;
+    private YukimurasGreatsword greatsword;
+    private EmmansLantern lantern;
+    private HudeensBlueprint blueprint;
+    private SerinasCloak cloak;
+
     public CezarsAmulet(JavaPlugin plugin) {
         this.plugin = plugin;
-        this.CEZARSAMULET_RECIPE_KEY = new NamespacedKey(plugin, "cezarsamulet_recipe");
         this.CEZARSAMULETCOMPLETE_RECIPE_KEY = new NamespacedKey(plugin, "cezarsamuletcomplete_recipe");
+
+
+        this.crown = new ArhamsCrown(plugin);
+        this.armlet = new LichtsArmlet(plugin);
+        this.wand = new YevasWand(plugin);
+        this.greatsword = new YukimurasGreatsword(plugin);
+        this.lantern = new EmmansLantern(plugin);
+        this.blueprint = new HudeensBlueprint(plugin);
+        this.cloak = new SerinasCloak(plugin);
+
     }
 
     public void registerRecipes() {
@@ -62,7 +86,13 @@ public class CezarsAmulet implements Listener {
 
     public void registerCezarsAmuletRecipeComplete() {
         ShapelessRecipe recipe = new ShapelessRecipe(CEZARSAMULETCOMPLETE_RECIPE_KEY, CezarsAmuletComplete());
-        recipe.addIngredient(Material.NETHER_STAR);
+        recipe.addIngredient(new RecipeChoice.ExactChoice(crown.ArhamsCrown()));  // Adjust method name
+        recipe.addIngredient(new RecipeChoice.ExactChoice(armlet.LichtsArmlet()));
+        recipe.addIngredient(new RecipeChoice.ExactChoice(wand.YevasWand()));
+        recipe.addIngredient(new RecipeChoice.ExactChoice(greatsword.YukimurasGreatsword()));
+        recipe.addIngredient(new RecipeChoice.ExactChoice(lantern.EmmansLantern()));
+        recipe.addIngredient(new RecipeChoice.ExactChoice(blueprint.HudeensBlueprint()));
+        recipe.addIngredient(new RecipeChoice.ExactChoice(cloak.SerinasCloak()));
         Bukkit.addRecipe(recipe);
     }
 
@@ -73,12 +103,6 @@ public class CezarsAmulet implements Listener {
 
         // Attributes (FIXED NamespacedKey - uses plugin instance)
         ItemAttributeModifiers.Builder builder = ItemAttributeModifiers.itemAttributes();
-
-        builder.addModifier(Attribute.LUCK,
-                new AttributeModifier(new NamespacedKey(plugin, "luck"), 1024,
-                        AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.OFFHAND));
-
-        amulet.setData(DataComponentTypes.ATTRIBUTE_MODIFIERS, builder.build());
 
 
         amulet.setData(DataComponentTypes.ITEM_MODEL, Key.key("chae", "cezars_amulet"));

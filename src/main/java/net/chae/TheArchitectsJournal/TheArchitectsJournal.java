@@ -13,7 +13,7 @@ public class TheArchitectsJournal extends JavaPlugin {
     private EmmansLantern lantern;
     private HudeensBlueprint blueprint;
     private SerinasCloak cloak;
-    //private CezarsAmulet amulet;
+    private CezarsAmulet amulet;
 
     @Override
     public void onEnable() {
@@ -28,7 +28,7 @@ public class TheArchitectsJournal extends JavaPlugin {
         lantern = new EmmansLantern(this);
         blueprint = new HudeensBlueprint(this);
         cloak = new SerinasCloak(this);
-        //amulet = new CezarsAmulet(this);
+        amulet = new CezarsAmulet(this);
 
         // Register recipes
         crown.registerRecipes();
@@ -39,7 +39,7 @@ public class TheArchitectsJournal extends JavaPlugin {
         lantern.registerRecipes();
         blueprint.registerRecipes();
         cloak.registerRecipes();
-        //amulet.registerRecipes();
+        amulet.registerRecipes();
 
         // Register events
         getServer().getPluginManager().registerEvents(crown, this);
@@ -50,7 +50,7 @@ public class TheArchitectsJournal extends JavaPlugin {
         getServer().getPluginManager().registerEvents(lantern, this);
         getServer().getPluginManager().registerEvents(blueprint, this);
         getServer().getPluginManager().registerEvents(cloak, this);
-        //getServer().getPluginManager().registerEvents(amulet, this);
+        getServer().getPluginManager().registerEvents(amulet, this);
 
         //lichts armlet effects
         armlet.startLichtsArmletPassives();

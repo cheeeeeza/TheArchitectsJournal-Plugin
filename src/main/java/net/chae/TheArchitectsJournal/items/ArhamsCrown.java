@@ -16,6 +16,7 @@ import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.attribute.*;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
@@ -34,8 +35,10 @@ import java.util.UUID;
 @SuppressWarnings("UnstableAPIUsage")
 public class ArhamsCrown implements Listener {
     private final JavaPlugin plugin;
+
     private final Map<UUID, Long> sonicCooldowns = new HashMap<>();
     private final Map<UUID, Long> wardenCooldowns = new HashMap<>();
+    private final Map<UUID, Boolean> crownWearers = new HashMap<>();
 
     private NamespacedKey ARHAMSCROWN_RECIPE_KEY;
     private NamespacedKey ARHAMSCROWNCOMPLETE_RECIPE_KEY;
@@ -44,14 +47,40 @@ public class ArhamsCrown implements Listener {
         this.plugin = plugin;
         this.ARHAMSCROWN_RECIPE_KEY = new NamespacedKey(plugin, "arhamscrown_recipe");
         this.ARHAMSCROWNCOMPLETE_RECIPE_KEY = new NamespacedKey(plugin, "arhamscrowncomplete_recipe");
+
+        startWardenProtectionTask();
+
     }
 
+    // WARDEN IMMUNITY -ISH -------------------------------------------------------------------------------------
+    private void startWardenProtectionTask() {
+        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                ItemStack helmet = player.getInventory().getHelmet();
+                boolean hasCrown = isArhamsCrown(helmet);
+
+                crownWearers.put(player.getUniqueId(), hasCrown);
+
+                if (hasCrown) {
+                    // clear warden targets on crown wearers
+                    for (Entity nearby : player.getNearbyEntities(50, 50, 50)) {
+                        if (nearby instanceof Warden warden && warden.getTarget() == player) {
+                            warden.setTarget(null);
+                            warden.setAnger(player, 0);
+                        }
+                    }
+                }
+            }
+        }, 0L, 5L);
+    }
+
+    // register recipes
     public void registerRecipes() {
         registerArhamsCrownRecipe();
         registerArhamsCrownRecipeComplete();
     }
 
-    // ACHIEVEMENT - Crown craft
+    // ACHIEVEMENT --------------------------------------------------------------------------------------
     @EventHandler
     public void onCrownCraft(CraftItemEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
@@ -71,7 +100,7 @@ public class ArhamsCrown implements Listener {
         }
     }
 
-    // RECIPES -------------------------------------------------------
+    // RECIPES ------------------------------------------------------------------------------------------
     public void registerArhamsCrownRecipe() {
         ShapedRecipe recipe = new ShapedRecipe(ARHAMSCROWN_RECIPE_KEY, ArhamsCrown());
         recipe.shape(
@@ -89,9 +118,7 @@ public class ArhamsCrown implements Listener {
         Bukkit.addRecipe(recipe);
     }
 
-    // RECIPES -------------------------------------------------------
-
-    // ITEMS ------------------------------------------------------------
+    // ITEMS --------------------------------------------------------------------------------------------
     public ItemStack ArhamsCrown() {
         ItemStack crown = ItemStack.of(Material.STICK);
         crown.setData(DataComponentTypes.ITEM_MODEL, Key.key("chae", "arhams_crown"));
@@ -142,9 +169,7 @@ public class ArhamsCrown implements Listener {
         return crown;
     }
 
-    // ITEMS ------------------------------------------------------------
-
-    // SPECIAL TITLE EFFECTS -----------------------------------------------
+    // SPECIAL TITLE EFFECTS ----------------------------------------------------------------------------
     public void giveArhamsCrownEffect(Player player) {
         player.playSound(player.getLocation(), "minecraft:entity.warden.emerge", 1f, 1f);
         player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_ANGRY, 0.7f, 0.9f);
@@ -152,7 +177,7 @@ public class ArhamsCrown implements Listener {
         player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_DIG, 0.7f, 0.9f);
 
         player.showTitle(Title.title(
-                Component.text("The Cursed Coronation").color(NamedTextColor.DARK_PURPLE),
+                Component.text("The Sealed Coronation").color(NamedTextColor.DARK_PURPLE),
                 Component.text(" - The Forsaken Prince - ").color(NamedTextColor.DARK_AQUA)
         ));
     }
@@ -169,14 +194,14 @@ public class ArhamsCrown implements Listener {
         }
     }
 
-    // CROWN CHECKER -----------------------------------------------------------
+    // CROWN CHECKER ------------------------------------------------------------------------------------
     private boolean isArhamsCrown(ItemStack item) {
         if (item == null) return false;
         Component name = item.getData(DataComponentTypes.ITEM_NAME);
         return name != null && name.equals(Component.text("Arham's Crown", NamedTextColor.DARK_AQUA));
     }
 
-    // SONIC BOOM ----------------------------------------------------------------
+    // SONIC BOOM ---------------------------------------------------------------------------------------
     @EventHandler
     public void onPlayerPunch(EntityDamageByEntityEvent event) {
         if (!(event.getDamager() instanceof Player attacker)) return;
@@ -212,7 +237,7 @@ public class ArhamsCrown implements Listener {
                 1.0f                       // pitch
         );
     }
-     // SONIC BOOM ----------------------------------------------------------
+
     private void doSonicBoom(Player player, Entity targetEntity) {
         Location loc = player.getLocation();
         World world = loc.getWorld();
@@ -235,7 +260,7 @@ public class ArhamsCrown implements Listener {
         victim.setVelocity(direction.multiply(2.0).setY(0.5));
     }
 
-    // WARDEN SPAWN -----------------------------------------------------------
+    // WARDEN SPAWN -------------------------------------------------------------------------------------
     @EventHandler
     public void onPlayerHit(EntityDamageByEntityEvent event) {
         if (!(event.getEntity() instanceof Player player) || !(event.getDamager() instanceof Player attacker)) return;
@@ -250,15 +275,6 @@ public class ArhamsCrown implements Listener {
         spawnWarden(player, attacker);
     }
 
-    @EventHandler
-    public void onWardenTarget(EntityTargetEvent event) {
-        if (!(event.getEntity() instanceof Warden) || !(event.getTarget() instanceof Player player)) return;
-
-        if (isArhamsCrown(player.getInventory().getHelmet())) {
-            event.setCancelled(true);
-        }
-    }
-
     private void spawnWarden(Player wearer, Player attacker) {
         Location loc = attacker.getLocation();
         World world = loc.getWorld();
@@ -269,23 +285,5 @@ public class ArhamsCrown implements Listener {
         world.playSound(loc, Sound.ENTITY_WARDEN_EMERGE, 1f, 1f);
         world.spawnParticle(Particle.SQUID_INK, loc, 50, 1, 2, 1, 0.1);
     }
-
-    // WARDEN IMMUNITY -------------------------------------------------------
-    @EventHandler
-    public void onWardenTarget(EntityTargetLivingEntityEvent event) {
-        if (!(event.getTarget() instanceof Player player)) return;
-
-        ItemStack hand = player.getInventory().getItemInOffHand();
-
-        if (!isArhamsCrown(hand)) return;
-
-        Entity e = event.getEntity();
-        if (e instanceof Warden) {
-            event.setCancelled(true);
-        }
-    }
-
-
-
 
 }
