@@ -1,6 +1,5 @@
 package net.chae.TheArchitectsJournal.items;
 
-import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.Equippable;
 import io.papermc.paper.datacomponent.item.ItemAttributeModifiers;
@@ -24,13 +23,12 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.*;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 
-
 @SuppressWarnings("UnstableAPIUsage")
+
 public class EmmansLantern implements Listener {
     private final JavaPlugin plugin;
 
@@ -42,7 +40,7 @@ public class EmmansLantern implements Listener {
         this.EMMANSLANTERN_RECIPE_KEY = new NamespacedKey(plugin, "emmanslanter_recipe");
         this.EMMANSLANTERNCOMPLETE_RECIPE_KEY = new NamespacedKey(plugin, "emmanslanterncomplete_recipe");
 
-        // **SNEAK SPEED - ONLY IN CONSTRUCTOR** (already correct)
+        // SUPER SNEAK SPEED ---------------------------------------------------------------------------
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -64,10 +62,7 @@ public class EmmansLantern implements Listener {
         registerEmmansLanternRecipeComplete();
     }
 
-    // Continuous sneak speed
-
-
-    // ACHIEVEMENT - lantern craft
+    // ACHIEVEMENT ----------------------------------------------------------------------------------
     @EventHandler
     public void onLanternCraft(CraftItemEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
@@ -87,7 +82,7 @@ public class EmmansLantern implements Listener {
         }
     }
 
-    // RECIPES -------------------------------------------------------
+    // RECIPES ------------------------------------------------------------------------------------
     public void registerEmmansLanternRecipe() {
         ShapedRecipe recipe = new ShapedRecipe(EMMANSLANTERN_RECIPE_KEY, EmmansLantern());
         recipe.shape(
@@ -111,9 +106,7 @@ public class EmmansLantern implements Listener {
         Bukkit.addRecipe(recipe);
     }
 
-    // RECIPES -------------------------------------------------------
-
-    // ITEMS ------------------------------------------------------------
+    // ITEMS ---------------------------------------------------------------------------------------
     public ItemStack EmmansLantern() {
         ItemStack crown = ItemStack.of(Material.GLOW_BERRIES);
         crown.setData(DataComponentTypes.ITEM_MODEL, Key.key("chae", "emmans_lantern"));
@@ -162,9 +155,7 @@ public class EmmansLantern implements Listener {
         return lantern;
     }
 
-    // ITEMS ------------------------------------------------------------
-
-    // SPECIAL TITLE EFFECTS -----------------------------------------------
+    // SPECIAL TITLE EFFECTS ----------------------------------------------------------------------------
     public void giveEmmansLanternEffect(Player player) {
 
         player.playSound(player.getLocation(),"minecraft:block.spore_blossom.place", 0.6f, 1.1f);
@@ -222,14 +213,14 @@ public class EmmansLantern implements Listener {
     }
 
 
-    // LANTERN CHECKER -----------------------------------------------------------
+    // LANTERN CHECKER ----------------------------------------------------------------------------------------
     private boolean isEmmansLantern(ItemStack item) {
         if (item == null) return false;
         Component name = item.getData(DataComponentTypes.ITEM_NAME);
         return name != null && name.equals(Component.text("Emman's Lantern", NamedTextColor.LIGHT_PURPLE));
     }
 
-    // OW MOBS IMMUNITY ----------------------------------------------------------
+    // OW MOBS IMMUNITY --------------------------------------------------------------------------------------
     @EventHandler
     public void onOverworldMobTarget(EntityTargetLivingEntityEvent event) {
         if (!(event.getTarget() instanceof Player player)) return;
@@ -249,7 +240,7 @@ public class EmmansLantern implements Listener {
         }
     }
 
-    // NO HUNGER CONSUMED RAHHH ------------------------------------------------------------
+    // NO HUNGER CONSUMED RAHHH -------------------------------------------------------------------------------
     @EventHandler
     public void onHungerChange(FoodLevelChangeEvent event) {
         if (!(event.getEntity() instanceof Player player)) return;
@@ -261,7 +252,7 @@ public class EmmansLantern implements Listener {
         event.setCancelled(true);
     }
 
-    // SPEED STEALER ---------------------------------------------------------------------
+    // SPEED STEALER ---------------------------------------------------------------------------------------
     @EventHandler
     public void onPlayerHit(EntityDamageByEntityEvent event) {
         if (!(event.getEntity() instanceof Player player)) return;
@@ -284,8 +275,5 @@ public class EmmansLantern implements Listener {
         // Sound effect
         player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 0.3f, 1.2f);
     }
-
-
-
 
 }
