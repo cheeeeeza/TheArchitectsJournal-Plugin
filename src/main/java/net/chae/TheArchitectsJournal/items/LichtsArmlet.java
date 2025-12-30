@@ -16,7 +16,6 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.*;
@@ -30,7 +29,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static net.kyori.adventure.text.format.TextColor.color;
-
 
 @SuppressWarnings("UnstableAPIUsage")
 
@@ -71,7 +69,7 @@ public class LichtsArmlet implements Listener {
         }
     }
 
-    // --ITEM RECIPES--------------------------------------------------------------
+    // --ITEM RECIPES------------------------------------------------------------------------------
     public void registerLichtsArmletRecipe() {
         ShapedRecipe recipe = new ShapedRecipe(LICHTSARMLET_RECIPE_KEY, LichtsArmlet());
         recipe.shape(
@@ -91,7 +89,7 @@ public class LichtsArmlet implements Listener {
         Bukkit.addRecipe(recipe);
     }
 
-    // --ITEM CREATION------------------------------------------------------------------------
+    // --ITEM CREATION-----------------------------------------------------------------------------
     public ItemStack LichtsArmlet() {
 
         ItemStack armlet = ItemStack.of(Material.STICK);
@@ -124,7 +122,7 @@ public class LichtsArmlet implements Listener {
         return armlet;
     }
 
-    // -- ITEM SPECIAL EFFECTS ---------------------------------------------------------------
+    // -- ITEM SPECIAL EFFECTS --------------------------------------------------------------------
     public void giveLichtsArmletEffect(Player player) {
         Location loc = player.getLocation();
 
@@ -149,7 +147,8 @@ public class LichtsArmlet implements Listener {
             giveLichtsArmletEffect(player);
         }
     }
-    // -- ITEM CHECKER --
+
+    // ITEM CHECKER --------------------------------------------------------------------------------
     private boolean isLichtsArmlet(ItemStack item) {
         if (item == null || item.getType() == Material.AIR) return false;
         if (!item.hasData(DataComponentTypes.ITEM_NAME)) return false;
@@ -161,11 +160,7 @@ public class LichtsArmlet implements Listener {
         );
     }
 
-
-    //ITEM SPECIAL EFFECTS----------------------------------------------------------------
-
-    //HOSTILE OCEAN MOBS NEUTRAL ---------------------------------------------------------
-
+    //HOSTILE OCEAN MOBS NEUTRAL -------------------------------------------------------------------
     @EventHandler
     public void onOceanMobTarget(EntityTargetLivingEntityEvent event) {
         if (!(event.getTarget() instanceof Player player)) return;
@@ -182,7 +177,7 @@ public class LichtsArmlet implements Listener {
         }
     }
 
-    //mastery of sea (passive) - water breathcing, faster swimming
+    // SEA MASTERY ---------------------------------------------------------------------------------
     public void startLichtsArmletPassives() {
         Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
@@ -190,7 +185,6 @@ public class LichtsArmlet implements Listener {
                 ItemStack hand = player.getInventory().getItemInOffHand();
                 if (!isLichtsArmlet(hand)) continue;
 
-                // Core water effects
                 player.addPotionEffect(new PotionEffect(
                         PotionEffectType.WATER_BREATHING, 60, 0, true, false
                 ));
@@ -230,7 +224,7 @@ public class LichtsArmlet implements Listener {
                 PotionEffectType.SLOW_FALLING, 60, 0, false, false
         ));
 
-        player.playSound(player.getLocation(), Sound.ENTITY_DOLPHIN_AMBIENT, 1f, 1.2f);
+        player.playSound(player.getLocation(), Sound.BLOCK_BUBBLE_COLUMN_UPWARDS_AMBIENT, 1f, 1.2f);
     }
 
     //AIR NET-----------------------------------------------------------------------------------------------
@@ -252,7 +246,7 @@ public class LichtsArmlet implements Listener {
 
         if ((event.getAction() == Action.LEFT_CLICK_AIR) && (netCooldown.containsKey(player.getUniqueId())
                 && now - netCooldown.get(player.getUniqueId()) < 10000)) {
-            player.sendActionBar(Component.text("§7Armlet recharging...", NamedTextColor.GRAY));
+            player.sendActionBar(Component.text("§9✦ Armlet Recovering... §9✦", NamedTextColor.GRAY));
             return;
         }
 
@@ -279,6 +273,16 @@ public class LichtsArmlet implements Listener {
     }
 
     // ULTIMATE I FORGOT WHAT THIS DOES ----------------------------------------------------------
+    @EventHandler
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        if (event.getHand() != EquipmentSlot.OFF_HAND) return;
+        if (event.getAction() != Action.RIGHT_CLICK_AIR &&
+                event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+
+        event.setCancelled(true);
+        activateUltimate(player);
+    }
 
     public void activateUltimate(Player player) {
         ItemStack hand = player.getInventory().getItemInOffHand();
@@ -287,7 +291,7 @@ public class LichtsArmlet implements Listener {
         long now = System.currentTimeMillis();
         if (ultimateCooldown.containsKey(player.getUniqueId())
                 && now - ultimateCooldown.get(player.getUniqueId()) < 30000) {
-            player.sendActionBar(Component.text("§7Armlet recharging...", NamedTextColor.GRAY));
+            player.sendActionBar(Component.text("§9✦ Armlet Recovering... §9✦", NamedTextColor.GRAY));
             return;
         }
 
@@ -312,14 +316,5 @@ public class LichtsArmlet implements Listener {
                 1f, 0.8f
         );
     }
-
-
-
-
-
-
-
-
-
 
 }
