@@ -24,9 +24,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static net.kyori.adventure.text.format.TextColor.color;
 
@@ -240,12 +238,6 @@ public class LichtsArmlet implements Listener {
         long now = System.currentTimeMillis();
         if (netCooldown.containsKey(player.getUniqueId())
                 && now - netCooldown.get(player.getUniqueId()) < 10000) {
-
-            return;
-        }
-
-        if ((event.getAction() == Action.LEFT_CLICK_AIR) && (netCooldown.containsKey(player.getUniqueId())
-                && now - netCooldown.get(player.getUniqueId()) < 10000)) {
             player.sendActionBar(Component.text("§9✦ Armlet Recovering... §9✦", NamedTextColor.GRAY));
             return;
         }
@@ -255,22 +247,50 @@ public class LichtsArmlet implements Listener {
         Location center = player.getLocation()
                 .add(player.getLocation().getDirection().multiply(8));
 
+        List<LivingEntity> affectedMobs = new ArrayList<>();
+
         for (Entity entity : center.getWorld().getNearbyEntities(center, 6, 6, 6)) {
             if (!(entity instanceof LivingEntity le)) continue;
             if (entity.equals(player)) continue;
 
+            affectedMobs.add(le);
+
             le.addPotionEffect(new PotionEffect(
                     PotionEffectType.LEVITATION, 100, 4
             ));
-
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                le.setVelocity(new Vector(0, -1.6, 0));
-            }, 40L);
         }
+
+        // Pull mobs together over 20 ticks (1 second), then slam down
+        Bukkit.getScheduler().runTaskTimer(plugin, task -> {
+            if (task.getTaskId() % 10 == 0) {  // Every 0.5s update pull strength
+                for (LivingEntity le : affectedMobs) {
+                    if (le.isDead() || !le.isValid()) continue;
+
+                    // Calculate direction to center
+                    Vector toCenter = center.toVector().subtract(le.getLocation().toVector()).normalize();
+                    // Stronger pull as time progresses
+                    double pullStrength = Math.min(0.4 + (task.getTaskId() * 0.02), 0.8);
+                    Vector pullVelocity = toCenter.multiply(pullStrength);
+                    pullVelocity.setY(0.3);  // Keep upward momentum
+
+                    le.setVelocity(pullVelocity);
+                }
+            }
+
+            // At 40 ticks: Final slam down
+            if (task.getTaskId() >= 40) {
+                for (LivingEntity le : affectedMobs) {
+                    if (le.isDead() || !le.isValid()) continue;
+                    le.setVelocity(new Vector(0, -1.6, 0));
+                }
+                task.cancel();
+            }
+        }, 0L, 1L);
 
         center.getWorld().spawnParticle(Particle.CLOUD, center, 60);
         player.playSound(center, Sound.BLOCK_BUBBLE_COLUMN_UPWARDS_AMBIENT, 1f, 0.8f);
     }
+
 
     // ULTIMATE I FORGOT WHAT THIS DOES ----------------------------------------------------------
     @EventHandler
