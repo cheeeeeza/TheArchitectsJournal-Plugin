@@ -40,6 +40,9 @@ public class LichtsArmlet implements Listener {
         this.plugin = plugin;
         this.LICHTSARMLET_RECIPE_KEY = new NamespacedKey(plugin, "lichtsarmlet_recipe");
             this.LICHTSARMLETCOMPLETE_RECIPE_KEY = new NamespacedKey(plugin, "lichtsarmletcomplete_recipe");
+
+        startOceanProtectionTask();
+
     }
 
     public void registerRecipes() {
@@ -159,21 +162,37 @@ public class LichtsArmlet implements Listener {
     }
 
     //HOSTILE OCEAN MOBS NEUTRAL -------------------------------------------------------------------
-    @EventHandler
-    public void onOceanMobTarget(EntityTargetLivingEntityEvent event) {
-        if (!(event.getTarget() instanceof Player player)) return;
 
-        ItemStack hand = player.getInventory().getItemInOffHand();
+    private final Map<UUID, Boolean> armletHolders = new HashMap<>();
 
-        if (!isLichtsArmlet(hand)) return;
+    private void startOceanProtectionTask() {
+        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            for (Player player : Bukkit.getOnlinePlayers()) {
 
-        Entity e = event.getEntity();
-        if (e instanceof Drowned ||
-                e instanceof Guardian ||
-                e instanceof ElderGuardian) {
-            event.setCancelled(true);
-        }
+                // Check offhand armlet
+                ItemStack offhand = player.getInventory().getItemInOffHand();
+                boolean hasArmlet = isLichtsArmlet(offhand);
+                armletHolders.put(player.getUniqueId(), hasArmlet);
+
+                if (!hasArmlet) continue;
+
+                // Constantly clear nearby ocean hostile targets
+                for (Entity nearby : player.getNearbyEntities(32, 16, 32)) {
+                    if (!(nearby instanceof Mob mob)) continue;
+
+                    if (mob instanceof Drowned ||
+                            mob instanceof Guardian ||
+                            mob instanceof ElderGuardian) {
+
+                        if (player.equals(mob.getTarget())) {
+                            mob.setTarget(null);  // hard clear target [web:85]
+                        }
+                    }
+                }
+            }
+        }, 0L, 5L); // every 0.25s, same as crown
     }
+
 
     // SEA MASTERY ---------------------------------------------------------------------------------
     public void startLichtsArmletPassives() {
@@ -281,7 +300,10 @@ public class LichtsArmlet implements Listener {
             if (task.getTaskId() >= 40) {
                 for (LivingEntity le : affectedMobs) {
                     if (le.isDead() || !le.isValid()) continue;
-                    le.setVelocity(new Vector(0, -1.6, 0));
+                    
+                    le.removePotionEffect(PotionEffectType.LEVITATION);
+
+                    le.setVelocity(new Vector(0, -2.6, 0));
                 }
                 task.cancel();
             }

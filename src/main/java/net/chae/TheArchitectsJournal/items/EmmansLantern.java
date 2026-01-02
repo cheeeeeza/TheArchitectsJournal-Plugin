@@ -27,6 +27,10 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 @SuppressWarnings("UnstableAPIUsage")
 
 public class EmmansLantern implements Listener {
@@ -55,6 +59,10 @@ public class EmmansLantern implements Listener {
                 }
             }
         }.runTaskTimer(plugin, 0L, 1L);
+
+        // OVERWORLD MOB IMMUNITY -------------------------------------------------------------------
+        startOverworldProtectionTask();
+
     }
 
     public void registerRecipes() {
@@ -221,24 +229,41 @@ public class EmmansLantern implements Listener {
     }
 
     // OW MOBS IMMUNITY --------------------------------------------------------------------------------------
-    @EventHandler
-    public void onOverworldMobTarget(EntityTargetLivingEntityEvent event) {
-        if (!(event.getTarget() instanceof Player player)) return;
 
-        ItemStack hand = player.getInventory().getItemInOffHand();
+    private final Map<UUID, Boolean> lanternHolders = new HashMap<>();
 
-        if (!isEmmansLantern(hand)) return;
 
-        Entity e = event.getEntity();
-        if (e instanceof Zombie ||
-                e instanceof Creeper ||
-                e instanceof Spider ||
-                e instanceof CaveSpider ||
-                e instanceof Skeleton ||
-                e instanceof Pillager) {
-            event.setCancelled(true);
-        }
+    private void startOverworldProtectionTask() {
+        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+
+                // Check offhand lantern
+                ItemStack offhand = player.getInventory().getItemInOffHand();
+                boolean hasLantern = isEmmansLantern(offhand);
+                lanternHolders.put(player.getUniqueId(), hasLantern);
+
+                if (!hasLantern) continue;
+
+                // Constantly clear nearby overworld hostile targets
+                for (Entity nearby : player.getNearbyEntities(32, 16, 32)) {
+                    if (!(nearby instanceof Mob mob)) continue;
+
+                    if (mob instanceof Zombie ||
+                            mob instanceof Creeper ||
+                            mob instanceof Spider ||
+                            mob instanceof CaveSpider ||
+                            mob instanceof Skeleton ||
+                            mob instanceof Pillager) {
+
+                        if (player.equals(mob.getTarget())) {
+                            mob.setTarget(null);                 // hard clear target
+                        }
+                    }
+                }
+            }
+        }, 0L, 5L);
     }
+
 
     // NO HUNGER CONSUMED RAHHH -------------------------------------------------------------------------------
     @EventHandler
