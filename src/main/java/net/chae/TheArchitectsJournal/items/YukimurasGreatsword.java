@@ -8,6 +8,7 @@ import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
+import org.bukkit.util.Vector;
 import net.kyori.adventure.title.Title;
 import org.bukkit.*;
 import org.bukkit.advancement.Advancement;
@@ -25,6 +26,7 @@ import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.event.block.Action;
@@ -39,6 +41,7 @@ import org.bukkit.entity.PiglinBrute;
 import org.bukkit.entity.PigZombie;
 import org.bukkit.entity.MagmaCube;
 import org.bukkit.entity.Enderman;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
 
@@ -57,6 +60,8 @@ public class YukimurasGreatsword implements Listener {
         this.plugin = plugin;
         this.YUKIMURASGREATSWORD_RECIPE_KEY = new NamespacedKey(plugin, "yukimurasgreatsword_recipe");
         this.YUKIMURASGREATSWORDCOMPLETE_RECIPE_KEY = new NamespacedKey(plugin, "yukimurasgreatswordcomplete_recipe");
+        startNetherProtectionTask();
+        startPassiveEffects();
     }
 
     public void registerRecipes() {
@@ -183,7 +188,7 @@ public class YukimurasGreatsword implements Listener {
         return greatsword;
     }
 
-    // -- ITEM TITLE EFFECTS ----------------------------------------------------------------------------------------
+    // ITEM TITLE EFFECTS ---------------------------------------------------------------------------
     public void giveYukimurasGreatswordEffect(Player player) {
         //EDIT
         player.playSound(player.getLocation(), "minecraft:entity.blaze.ambient", 1f, 1f);
@@ -208,6 +213,7 @@ public class YukimurasGreatsword implements Listener {
         ItemStack newItem = player.getInventory().getItem(event.getNewSlot());
         boolean hasSword = isYukimurasGreatsword(newItem);
 
+
         // Item being switched FROM
         ItemStack oldItem = player.getInventory().getItem(event.getPreviousSlot());
         boolean hadSword = isYukimurasGreatsword(oldItem);
@@ -215,50 +221,47 @@ public class YukimurasGreatsword implements Listener {
         if (hasSword && !hadSword) {
             giveYukimurasGreatswordEffect(player);
         }
-
-        // ───── PASSIVE FIRE RES─--------------------------------------------------------------
-        if (hasSword) {
-            player.addPotionEffect(new PotionEffect(
-                    PotionEffectType.FIRE_RESISTANCE,
-                    Integer.MAX_VALUE,
-                    0,
-                    true,
-                    false
-            ));
-
-            player.addPotionEffect(new PotionEffect(
-                    PotionEffectType.RESISTANCE,
-                    Integer.MAX_VALUE,
-                    5, // Level 6
-                    true,
-                    false
-            ));
-        } else {
-            player.removePotionEffect(PotionEffectType.FIRE_RESISTANCE);
-            player.removePotionEffect(PotionEffectType.RESISTANCE);
-        }
     }
 
     //NETHER MOB IMMUNITY ------------------------------------------------------------------------
 
-    @EventHandler
-    public void onNetherMobTarget(EntityTargetLivingEntityEvent event) {
-        if (!(event.getTarget() instanceof Player player)) return;
+    private final Map<UUID, Boolean> swordHolders = new HashMap<>();
 
-        ItemStack mainHand = player.getInventory().getItemInMainHand();
 
-        if (!isYukimurasGreatsword(mainHand)) return;
+    private void startNetherProtectionTask() {
+        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            for (Player player : Bukkit.getOnlinePlayers()) {
 
-        Entity attacker = event.getEntity();
-        if (attacker instanceof Blaze ||
-                attacker instanceof Ghast ||
-                attacker instanceof WitherSkeleton ||
-                attacker instanceof PiglinBrute ||
-                attacker instanceof PigZombie ||
-                attacker instanceof MagmaCube ||
-                attacker instanceof Enderman) {
-        } event.setCancelled(true);
+                // Check main hand sword
+                ItemStack mainHand = player.getInventory().getItemInMainHand();
+                boolean hasSword = isYukimurasGreatsword(mainHand);
+                swordHolders.put(player.getUniqueId(), hasSword);
+
+                if (!hasSword) continue;
+
+                // Constantly clear nearby nether hostile targets
+                for (Entity nearby : player.getNearbyEntities(67, 67, 67)) {
+                    if (!(nearby instanceof Mob mob)) continue;
+
+                    if (mob instanceof Blaze ||
+                            mob instanceof Ghast ||
+                            mob instanceof WitherSkeleton ||
+                            mob instanceof PiglinBrute ||
+                            mob instanceof PigZombie ||
+                            mob instanceof MagmaCube ||
+                            mob instanceof Skeleton ||
+                            mob instanceof Enderman) {
+
+                        if (player.equals(mob.getTarget())) {
+                            mob.setTarget(null);
+                            mob.setAggressive(false);
+                        }
+                    }
+                }
+            }
+        }, 0L, 3L); // every 0.25s
     }
+
 
     // TELEPORTATION DIMENSION ---------------------------------------------------------------------------
     private int getSafeY(World world, int x, int z) {
@@ -278,7 +281,7 @@ public class YukimurasGreatsword implements Listener {
         if (!isYukimurasGreatsword(player.getInventory().getItemInMainHand())) return;
         if (!player.isSneaking() || event.getAction() != Action.RIGHT_CLICK_AIR) return;
 
-        // Prevent spam (5s cooldown)
+        // cd
         Long lastTp = netherTpCooldowns.get(player.getUniqueId());
         if (lastTp != null && System.currentTimeMillis() - lastTp < 60000) {
             player.sendActionBar(Component.text("§9✦ Greatsword Recharging... §9✦", NamedTextColor.GRAY));
@@ -403,6 +406,67 @@ public class YukimurasGreatsword implements Listener {
     }
 
     // -- ITEM CHECKER ---------------------------------------------------------------------------------------------------------
+
+    private final Map<UUID, Long> swimCooldown = new HashMap<>();
+
+    @EventHandler
+    public void onLavaSwimBoost(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+        ItemStack mainHand = player.getInventory().getItemInMainHand();
+        ItemStack offHand = player.getInventory().getItemInOffHand();
+
+        if (!isYukimurasGreatsword(mainHand) && !isYukimurasGreatsword(offHand)) return;
+
+        // Check if in lava (head or body submerged)
+        Location loc = player.getLocation();
+        Block feetBlock = loc.clone().subtract(0, 0.3, 0).getBlock();
+        Block headBlock = loc.clone().add(0, 0.5, 0).getBlock();
+        if (feetBlock.getType() != Material.LAVA && headBlock.getType() != Material.LAVA) return;
+
+        if (player.isOnGround()) return;
+        if (player.isSneaking()) return;
+
+        long now = System.currentTimeMillis();
+        UUID uuid = player.getUniqueId();
+        if (swimCooldown.containsKey(uuid) && now - swimCooldown.get(uuid) < 300) return;  // 0.3s cooldown for smooth
+
+        swimCooldown.put(uuid, now);
+
+        // Boost forward + slight up for lava swimming propulsion
+        Vector dir = player.getLocation().getDirection().multiply(1.0);
+        dir.setY(0.0);
+        player.setVelocity(dir);
+
+        player.playSound(player.getLocation(), Sound.ENTITY_STRIDER_STEP_LAVA, 0.8f, 1.5f);
+    }
+
+
+    private void startPassiveEffects() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    ItemStack mainHand = player.getInventory().getItemInMainHand();
+                    ItemStack offHand = player.getInventory().getItemInOffHand();
+
+                    boolean hasSword = isYukimurasGreatsword(mainHand) || isYukimurasGreatsword(offHand);
+
+                    if (hasSword) {
+                        // Fire res + resistance (both hands)
+                        player.addPotionEffect(new PotionEffect(
+                                PotionEffectType.FIRE_RESISTANCE, 40, 0, true, false));
+
+                    } else {
+                        player.removePotionEffect(PotionEffectType.FIRE_RESISTANCE);
+                        player.removePotionEffect(PotionEffectType.LEVITATION);  // Clear lava walk
+                    }
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+    }
+
+
+
     private boolean isYukimurasGreatsword(ItemStack item) {
         if (item == null) return false;
         Component name = item.getData(DataComponentTypes.ITEM_NAME);

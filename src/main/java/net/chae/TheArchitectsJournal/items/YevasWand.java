@@ -48,6 +48,8 @@ public class YevasWand implements Listener {
         this.YEVASWAND_RECIPE_KEY = new NamespacedKey(plugin, "yevaswand_recipe");
         this.YEVASWANDCOMPLETE_RECIPE_KEY = new NamespacedKey(plugin, "yevaswandcomplete_recipe");
         this.rabbitKey = new NamespacedKey(plugin, "original_uuid");
+        startWandProtectionTask();
+
     }
 
     public void registerRecipes() {
@@ -516,42 +518,46 @@ public class YevasWand implements Listener {
         return null;
     }
 
-    // KILLER RABBIT IMMUNITY ----------------------------------------------------------------------------
-    @EventHandler
-    public void onKillerRabbitTarget(EntityTargetLivingEntityEvent event) {
-        if (!(event.getTarget() instanceof Player player)) return;
+    // KILLER RABBIT  & NETHER MOBS & PHANTOM IMMUNITY -------------------------------------------------------------
 
-        ItemStack offhand = player.getInventory().getItemInOffHand();
-        ItemStack mainhand = player.getInventory().getItemInMainHand();
+    private final Map<UUID, Boolean> wandHolders = new HashMap<>();
 
-        if (!isYevasWand(offhand) && !isYevasWand(mainhand)) return;
+    private void startWandProtectionTask() {
+        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            for (Player player : Bukkit.getOnlinePlayers()) {
 
-        Entity attacker = event.getEntity();
-        if (attacker instanceof Rabbit rabbit && rabbit.getRabbitType() == Rabbit.Type.THE_KILLER_BUNNY) {
-            event.setCancelled(true);
-        }
+                ItemStack offhand = player.getInventory().getItemInOffHand();
+                ItemStack mainhand = player.getInventory().getItemInMainHand();
+                boolean hasWand = isYevasWand(offhand) || isYevasWand(mainhand);
+                wandHolders.put(player.getUniqueId(), hasWand);
+
+                if (!hasWand) continue;
+
+                for (Entity nearby : player.getNearbyEntities(67, 67, 67)) {
+                    if (!(nearby instanceof Mob mob)) continue;
+
+                    if (player.equals(mob.getTarget())) {
+                        mob.setTarget(null);
+
+                        if (mob instanceof Phantom ||
+                                mob instanceof Blaze ||
+                                mob instanceof Ghast ||
+                                mob instanceof WitherSkeleton ||
+                                mob instanceof PiglinBrute ||
+                                mob instanceof PigZombie ||
+                                mob instanceof MagmaCube ||
+                                mob instanceof Enderman ||
+                                mob instanceof Skeleton ||
+                                (mob instanceof Rabbit rabbit && rabbit.getRabbitType() == Rabbit.Type.THE_KILLER_BUNNY)) {
+
+                            mob.setTarget(null);
+                        }
+                    }
+                }
+            }
+        }, 0L, 1L);
     }
 
-    // NETHER MOBS IMMUNITY --------------------------------------------------------------------------------
-    @EventHandler
-    public void onNetherMobTarget(EntityTargetLivingEntityEvent event) {
-        if (!(event.getTarget() instanceof Player player)) return;
-
-        ItemStack offhand = player.getInventory().getItemInOffHand();
-        ItemStack mainhand = player.getInventory().getItemInMainHand();
-
-        if (!isYevasWand(offhand) && !isYevasWand(mainhand)) return;;
-
-        Entity attacker = event.getEntity();
-        if (attacker instanceof Blaze ||
-                attacker instanceof Ghast ||
-                attacker instanceof WitherSkeleton ||
-                attacker instanceof PiglinBrute ||
-                attacker instanceof PigZombie ||
-                attacker instanceof MagmaCube ||
-                attacker instanceof Enderman) {
-        } event.setCancelled(true);
-    }
 
     // WAND CHECKER --------------------------------------------------------------------------------------------
     private boolean isYevasWand(ItemStack item) {

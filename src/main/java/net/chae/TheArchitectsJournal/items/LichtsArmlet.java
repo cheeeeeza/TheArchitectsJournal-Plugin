@@ -177,7 +177,7 @@ public class LichtsArmlet implements Listener {
                 if (!hasArmlet) continue;
 
                 // Constantly clear nearby ocean hostile targets
-                for (Entity nearby : player.getNearbyEntities(32, 16, 32)) {
+                for (Entity nearby : player.getNearbyEntities(67, 67, 67)) {
                     if (!(nearby instanceof Mob mob)) continue;
 
                     if (mob instanceof Drowned ||
@@ -186,11 +186,12 @@ public class LichtsArmlet implements Listener {
 
                         if (player.equals(mob.getTarget())) {
                             mob.setTarget(null);  // hard clear target [web:85]
+                            mob.setAggressive(false);
                         }
                     }
                 }
             }
-        }, 0L, 5L); // every 0.25s, same as crown
+        }, 0L, 3L); // every 0.25s
     }
 
 
@@ -229,7 +230,7 @@ public class LichtsArmlet implements Listener {
 
         long now = System.currentTimeMillis();
         if (glideCooldown.containsKey(player.getUniqueId())
-                && now - glideCooldown.get(player.getUniqueId()) < 1000) return;
+                && now - glideCooldown.get(player.getUniqueId()) < 500) return;
 
         glideCooldown.put(player.getUniqueId(), now);
 

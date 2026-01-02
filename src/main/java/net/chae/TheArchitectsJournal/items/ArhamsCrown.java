@@ -59,7 +59,7 @@ public class ArhamsCrown implements Listener {
 
                 if (hasCrown) {
                     // clear warden targets on crown wearers
-                    for (Entity nearby : player.getNearbyEntities(50, 50, 50)) {
+                    for (Entity nearby : player.getNearbyEntities(67, 67, 67)) {
                         if (nearby instanceof Warden warden && warden.getTarget() == player) {
                             warden.setTarget(null);
                             warden.setAnger(player, 0);
@@ -67,7 +67,7 @@ public class ArhamsCrown implements Listener {
                     }
                 }
             }
-        }, 0L, 5L);
+        }, 0L, 3L);
     }
 
     // register recipes

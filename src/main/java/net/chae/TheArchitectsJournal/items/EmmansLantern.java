@@ -245,7 +245,7 @@ public class EmmansLantern implements Listener {
                 if (!hasLantern) continue;
 
                 // Constantly clear nearby overworld hostile targets
-                for (Entity nearby : player.getNearbyEntities(32, 16, 32)) {
+                for (Entity nearby : player.getNearbyEntities(67, 67, 67)) {
                     if (!(nearby instanceof Mob mob)) continue;
 
                     if (mob instanceof Zombie ||
@@ -256,12 +256,13 @@ public class EmmansLantern implements Listener {
                             mob instanceof Pillager) {
 
                         if (player.equals(mob.getTarget())) {
-                            mob.setTarget(null);                 // hard clear target
+                            mob.setTarget(null);
+                            mob.setAggressive(false);
                         }
                     }
                 }
             }
-        }, 0L, 5L);
+        }, 0L, 3L);
     }
 
 
