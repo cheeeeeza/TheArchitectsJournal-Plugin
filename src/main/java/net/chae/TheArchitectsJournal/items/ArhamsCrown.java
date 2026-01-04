@@ -17,6 +17,7 @@ import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.inventory.*;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -26,6 +27,10 @@ import org.bukkit.potion.PotionEffectType;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
+
+import static org.bukkit.event.entity.EntityDamageEvent.DamageCause.SONIC_BOOM;
+
 
 @SuppressWarnings("UnstableAPIUsage")
 
@@ -252,7 +257,7 @@ public class ArhamsCrown implements Listener {
         }
 
         world.playSound(playerLoc, Sound.ENTITY_WARDEN_SONIC_BOOM, 2f, 1f);
-        victim.damage(15, player);
+        victim.damage(60);
         victim.setVelocity(direction.multiply(2.0).setY(0.5));
     }
 

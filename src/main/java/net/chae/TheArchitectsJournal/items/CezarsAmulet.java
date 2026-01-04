@@ -17,9 +17,12 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.*;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerInteractEvent;
 import net.chae.TheArchitectsJournal.items.ArhamsCrown;  // Replace with actual class names
 import net.chae.TheArchitectsJournal.items.LichtsArmlet;
 import net.chae.TheArchitectsJournal.items.YevasWand;
@@ -27,6 +30,12 @@ import net.chae.TheArchitectsJournal.items.YukimurasGreatsword;
 import net.chae.TheArchitectsJournal.items.EmmansLantern;
 import net.chae.TheArchitectsJournal.items.HudeensBlueprint;
 import net.chae.TheArchitectsJournal.items.SerinasCloak;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Vector;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+
 
 @SuppressWarnings("UnstableAPIUsage")
 public class CezarsAmulet implements Listener {
@@ -55,6 +64,9 @@ public class CezarsAmulet implements Listener {
         this.lantern = new EmmansLantern(plugin);
         this.blueprint = new HudeensBlueprint(plugin);
         this.cloak = new SerinasCloak(plugin);
+
+
+        startFreezeTask();
 
     }
 
@@ -86,13 +98,13 @@ public class CezarsAmulet implements Listener {
 
     public void registerCezarsAmuletRecipeComplete() {
         ShapelessRecipe recipe = new ShapelessRecipe(CEZARSAMULETCOMPLETE_RECIPE_KEY, CezarsAmuletComplete());
-        recipe.addIngredient(new RecipeChoice.ExactChoice(crown.ArhamsCrown()));  // Adjust method name
-        recipe.addIngredient(new RecipeChoice.ExactChoice(armlet.LichtsArmlet()));
-        recipe.addIngredient(new RecipeChoice.ExactChoice(wand.YevasWand()));
-        recipe.addIngredient(new RecipeChoice.ExactChoice(greatsword.YukimurasGreatsword()));
-        recipe.addIngredient(new RecipeChoice.ExactChoice(lantern.EmmansLantern()));
-        recipe.addIngredient(new RecipeChoice.ExactChoice(blueprint.HudeensBlueprint()));
-        recipe.addIngredient(new RecipeChoice.ExactChoice(cloak.SerinasCloak()));
+        recipe.addIngredient(new RecipeChoice.ExactChoice(crown.ArhamsCrownComplete()));  // Adjust method name
+        recipe.addIngredient(new RecipeChoice.ExactChoice(armlet.LichtsArmletComplete()));
+        recipe.addIngredient(new RecipeChoice.ExactChoice(wand.YevasWandComplete()));
+        recipe.addIngredient(new RecipeChoice.ExactChoice(greatsword.YukimurasGreatswordComplete()));
+        recipe.addIngredient(new RecipeChoice.ExactChoice(lantern.EmmansLanternComplete()));
+        recipe.addIngredient(new RecipeChoice.ExactChoice(blueprint.HudeensBlueprintComplete()));
+        recipe.addIngredient(new RecipeChoice.ExactChoice(cloak.SerinasCloakComplete()));
         Bukkit.addRecipe(recipe);
     }
 
@@ -103,7 +115,6 @@ public class CezarsAmulet implements Listener {
 
         // Attributes (FIXED NamespacedKey - uses plugin instance)
         ItemAttributeModifiers.Builder builder = ItemAttributeModifiers.itemAttributes();
-
 
         amulet.setData(DataComponentTypes.ITEM_MODEL, Key.key("chae", "cezars_amulet"));
 
@@ -130,11 +141,11 @@ public class CezarsAmulet implements Listener {
 
         player.playSound(player.getLocation(),"minecraft:block.respawn_anchor.charge", 0.4f, 0.9f);
         player.playSound(player.getLocation(),"minecraft:block.enchantment_table.use", 0.4f, 0.9f);
-        player.playSound(player.getLocation(),"minecraft:block.anvil.use", 0.2f, 1.8f);
         player.playSound(player.getLocation(),"minecraft:block.beacon.activate", 0.35f, 1.1f);
         player.playSound(player.getLocation(),"minecraft:block.lightning_rod.power_on", 0.4f, 1.1f);
         player.playSound(player.getLocation(),"minecraft:block.lightning_rod.power_on", 0.4f, 1.1f);
         player.playSound(player.getLocation(),"minecraft:block.lightning_rod.power_on", 0.4f, 1.1f);
+        player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1f, 0.9f);
 
         player.showTitle(Title.title(
                 Component.text("The Vision of Time").color(NamedTextColor.DARK_PURPLE),
@@ -148,8 +159,13 @@ public class CezarsAmulet implements Listener {
         ItemStack newOffhand = event.getOffHandItem();
         if (isCezarsAmulet(newOffhand)) {
             giveCezarsAmuletEffect(player);
+        } else {
+            // Restart task if no one holds it anymore (optional robustness)
+            stopFreezeTask();
+            startFreezeTask();
         }
     }
+
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
@@ -171,6 +187,82 @@ public class CezarsAmulet implements Listener {
         Component name = item.getData(DataComponentTypes.ITEM_NAME);
         return name != null && name.equals(Component.text("Cezar's Amulet", NamedTextColor.DARK_PURPLE));
     }
+
+    // AURA FREEZE
+    private int freezeTaskId = -1;
+    public void startFreezeTask() {
+        if (freezeTaskId != -1) return;
+        freezeTaskId = new BukkitRunnable() {
+            @Override
+            public void run() {
+                for (Player holder : Bukkit.getOnlinePlayers()) {
+                    if (!isCezarsAmulet(holder.getInventory().getItemInOffHand())) continue;
+                    Location loc = holder.getLocation();
+                    for (Entity entity : loc.getNearbyEntities(15.0, 15.0, 15.0)) {
+                        if (entity instanceof Player p && p == holder) continue;
+                        entity.setVelocity(new Vector(0, 0, 0));
+                    }
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 1L).getTaskId();
+    }
+
+    public void stopFreezeTask() {
+        if (freezeTaskId != -1) {
+            Bukkit.getScheduler().cancelTask(freezeTaskId);
+            freezeTaskId = -1;
+        }
+    }
+
+    // PLAYER UNIVERSAL FREEZE
+
+    private final Set<UUID> frozen = new HashSet<>();
+
+    @EventHandler
+    public void onAmuletLeftClick(PlayerInteractEvent event) {
+        if (event.getHand() != EquipmentSlot.OFF_HAND) return; // offhand only [web:115]
+        if (event.getAction() != Action.LEFT_CLICK_AIR && event.getAction() != Action.LEFT_CLICK_BLOCK) return;
+
+        Player caster = event.getPlayer();
+        if (!isCezarsAmulet(caster.getInventory().getItemInOffHand())) return;
+
+        // Optional: prevent block breaking / interactions
+        event.setCancelled(true);
+
+        freezeAllPlayersFor15s(caster);
+    }
+
+    private void freezeAllPlayersFor15s(Player caster) {
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            frozen.add(p.getUniqueId());
+            p.setVelocity(new Vector(0, 0, 0));
+        }
+
+        caster.getWorld().playSound(caster.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 1f, 0.5f);
+
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                frozen.remove(p.getUniqueId());
+            }
+        }, 20L * 10); // 15 seconds
+    }
+
+    @EventHandler
+    public void onMove(PlayerMoveEvent event) {
+        if (!frozen.contains(event.getPlayer().getUniqueId())) return;
+        if (event.getTo() == null) return;
+
+        // allow head turning, block translation
+        Location from = event.getFrom();
+        Location to = event.getTo();
+        if (from.getX() != to.getX() || from.getY() != to.getY() || from.getZ() != to.getZ()) {
+            event.setTo(from);
+        }
+    }
+
+
+
+
 
 
 

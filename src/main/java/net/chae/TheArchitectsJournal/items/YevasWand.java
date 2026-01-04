@@ -567,4 +567,3 @@ public class YevasWand implements Listener {
     }
 
 }
-

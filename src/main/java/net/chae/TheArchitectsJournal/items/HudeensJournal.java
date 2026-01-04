@@ -210,7 +210,7 @@ public class HudeensJournal implements Listener {
                 ).color(NamedTextColor.DARK_GRAY),
 
                 Component.text(
-                        "species: oak, spruce, jungle acacia, cherry and bamboo, along with three " +
+                        "species: oak, spruce, jungle, cherry and bamboo, along with three " +
                                 "anvils placed in the bottom row of a crafting table, the lantern comes to light. \n\n" +
                                 "The result is deceptively simple. It’s mass, however, betrays its true nature."
                 ).color(NamedTextColor.DARK_GRAY),

@@ -199,9 +199,10 @@ public class HudeensBlueprint implements Listener {
         duplicateCooldowns.put(player.getUniqueId(), System.currentTimeMillis());
 
         // **HALVE HEALTH** - The ultimate cost of creation
-        double currentHealth = player.getHealth();
-        double newHealth = currentHealth / 2;
-        player.setHealth(newHealth);
+        // Random damage 0-20 (death possible)
+        double randomDamage = Math.random() * 20;  // 0 to 20 damage (0-10 hearts)
+        player.damage(randomDamage);  // Triggers death if > current health
+
 
         player.playSound(player.getLocation(), Sound.ENTITY_WITHER_HURT, 0.8f, 0.6f);
         player.getWorld().spawnParticle(Particle.DAMAGE_INDICATOR, player.getLocation().add(0, 1, 0), 20, 0.5, 0.5, 0.5, 0.15);

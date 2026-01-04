@@ -311,7 +311,7 @@ public class LichtsArmlet implements Listener {
         }, 0L, 1L);
 
         center.getWorld().spawnParticle(Particle.CLOUD, center, 60);
-        player.playSound(center, Sound.BLOCK_BUBBLE_COLUMN_UPWARDS_AMBIENT, 1f, 0.8f);
+        player.playSound(center, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1f, 0.8f);
     }
 
 

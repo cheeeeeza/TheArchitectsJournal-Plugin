@@ -159,7 +159,7 @@ public class YukimurasGreatsword implements Listener {
                         AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.OFFHAND));
 
         builder.addModifier(Attribute.ATTACK_DAMAGE,
-                new AttributeModifier(new NamespacedKey(plugin, "attack_damage"), 10,
+                new AttributeModifier(new NamespacedKey(plugin, "attack_damage"), 60,
                         AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.HAND));
 
         builder.addModifier(Attribute.BLOCK_BREAK_SPEED,
@@ -346,22 +346,29 @@ public class YukimurasGreatsword implements Listener {
         Block block = event.getClickedBlock();
         Location loc = block.getLocation().add(0.5, 0.5, 0.5);
 
-        UUID uuid = player.getUniqueId();
-        long now = System.currentTimeMillis();
-        if (lastExplosionTime.getOrDefault(uuid, 0L) > now - 5000) {  // 0.5 sec CD
-            player.sendActionBar(Component.text("§9✦ Greatsword Recharging... §9✦", NamedTextColor.GRAY));
-            return;
+        double radius = 5.0;
+
+        for (Entity entity : loc.getWorld().getNearbyEntities(loc, radius, radius, radius)) {
+            if (!(entity instanceof LivingEntity)) continue;
+            if (entity.equals(player)) continue;
+
+            Vector knockback = entity.getLocation().toVector()
+                    .subtract(loc.toVector())
+                    .normalize()
+                    .multiply(2.5);
+
+            knockback.setY(1.2);
+            entity.setVelocity(knockback);
+
+            entity.setFireTicks(80); // 🔥 burn
         }
 
-        lastExplosionTime.put(uuid, now);
-        event.setCancelled(true);
-
-        // VFX
-        player.getWorld().createExplosion(loc, 4.0f, true, true);  // Block damage + fire
+        // VFX only
         player.getWorld().spawnParticle(Particle.EXPLOSION, loc, 1);
+        player.getWorld().spawnParticle(Particle.FLAME, loc, 120, 0.6, 0.6, 0.6, 0.1);
         player.getWorld().playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 0.8f);
-
     }
+
 
     // FIRE ASCPECT---------------------------------------------------------
     @EventHandler
@@ -440,7 +447,6 @@ public class YukimurasGreatsword implements Listener {
         player.playSound(player.getLocation(), Sound.ENTITY_STRIDER_STEP_LAVA, 0.8f, 1.5f);
     }
 
-
     private void startPassiveEffects() {
         new BukkitRunnable() {
             @Override
@@ -449,23 +455,17 @@ public class YukimurasGreatsword implements Listener {
                     ItemStack mainHand = player.getInventory().getItemInMainHand();
                     ItemStack offHand = player.getInventory().getItemInOffHand();
 
-                    boolean hasSword = isYukimurasGreatsword(mainHand) || isYukimurasGreatsword(offHand);
-
-                    if (hasSword) {
-                        // Fire res + resistance (both hands)
-                        player.addPotionEffect(new PotionEffect(
-                                PotionEffectType.FIRE_RESISTANCE, 40, 0, true, false));
-
-                    } else {
-                        player.removePotionEffect(PotionEffectType.FIRE_RESISTANCE);
-                        player.removePotionEffect(PotionEffectType.LEVITATION);  // Clear lava walk
+                    if (!isYukimurasGreatsword(mainHand) && !isYukimurasGreatsword(offHand)) {
+                        continue;  // Skip - no removes, preserves other effects (wand levitation)
                     }
+
+                    // Sword holder only gets fire res
+                    player.addPotionEffect(new PotionEffect(
+                            PotionEffectType.FIRE_RESISTANCE, 40, 0, true, false));
                 }
             }
         }.runTaskTimer(plugin, 0L, 1L);
     }
-
-
 
     private boolean isYukimurasGreatsword(ItemStack item) {
         if (item == null) return false;

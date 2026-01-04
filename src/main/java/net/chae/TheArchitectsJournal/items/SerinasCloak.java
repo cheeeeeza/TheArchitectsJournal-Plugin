@@ -177,7 +177,7 @@ public class SerinasCloak implements Listener {
 
     private final Map<UUID, Location> lastTeleportLocation = new HashMap<>();
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
 
 
