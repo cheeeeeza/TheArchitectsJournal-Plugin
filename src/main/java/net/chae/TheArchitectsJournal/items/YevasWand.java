@@ -251,8 +251,9 @@ public class YevasWand implements Listener {
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player player = event.getEntity();
         ItemStack offhand = player.getInventory().getItemInOffHand();
+        ItemStack mainhand = player.getInventory().getItemInMainHand();
 
-        if (!isYevasWand(offhand)) {
+        if (!isYevasWand(offhand) && !isYevasWand(mainhand)) {
             return;
         }
 
@@ -390,7 +391,7 @@ public class YevasWand implements Listener {
 
             // Find safe Y level
             World world = victim.getWorld();
-            teleportLoc = findSafeLocation(world, teleportLoc, 20);
+            teleportLoc = findSafeLocation(world, teleportLoc, 67);
             victim.teleport(teleportLoc);
 
             // Apply bunny debuffs for 5 seconds (shorter duration)

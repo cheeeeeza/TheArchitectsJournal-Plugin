@@ -3,6 +3,7 @@ package net.chae.TheArchitectsJournal.items;
 import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.Equippable;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
@@ -180,6 +181,17 @@ public class SerinasCloak implements Listener {
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
 
+        // **FIX 1: Explicitly allow vanilla item use (food/bows/etc.)**
+        event.setUseItemInHand(Event.Result.ALLOW);
+        event.setUseInteractedBlock(Event.Result.ALLOW);
+
+        // **FIX 2: Early food check (handles null safely)**
+        if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+            ItemStack item = event.getItem();
+            if (item != null && item.getType().isEdible()) {
+                return;  // Pure eating, skip teleport
+            }
+        }
 
         Player player = event.getPlayer();
         if (!isSerinasCloak(player.getInventory().getHelmet())) return;
@@ -190,13 +202,15 @@ public class SerinasCloak implements Listener {
 
         // **LEFT CLICK** - Random 5-20 blocks forward
         if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
-            double distance = 5 + Math.random() * 15; // 5-20 range
-            Location target = loc.clone().add(loc.getDirection().multiply(distance));
-            target.setY(findSafeY(world, target));
-            player.teleport(target);
-            world.spawnParticle(Particle.PORTAL, loc, 20, 0.5, 0.5, 0.5, 0.2);
-            world.playSound(loc, Sound.ENTITY_ENDERMAN_TELEPORT, 0.7f, 1.5f);
-            player.sendActionBar(Component.text("§a✦ The Future... §a✦", NamedTextColor.DARK_GREEN));
+            if (player.isSneaking()) {
+                double distance = 5 + Math.random() * 15; // 5-20 range
+                Location target = loc.clone().add(loc.getDirection().multiply(distance));
+                target.setY(findSafeY(world, target));
+                player.teleport(target);
+                world.spawnParticle(Particle.PORTAL, loc, 20, 0.5, 0.5, 0.5, 0.2);
+                world.playSound(loc, Sound.ENTITY_ENDERMAN_TELEPORT, 0.7f, 1.5f);
+                player.sendActionBar(Component.text("§a✦ The Future... §a✦", NamedTextColor.DARK_GREEN));
+            }
         }
 
         // **RIGHT CLICK** - Shift = Return to previous position
@@ -232,7 +246,7 @@ public class SerinasCloak implements Listener {
     //safety net for tp
     private double findSafeY(World world, Location target) {
         // Scan up/down 20 blocks for safe landing
-        for (int y = -20; y <= 20; y++) {
+        for (int y = -50; y <= 50; y++) {
             Location check = target.clone();
             check.setY(target.getY() + y);
             if (check.getBlock().getType().isSolid() &&

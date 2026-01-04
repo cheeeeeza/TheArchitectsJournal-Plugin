@@ -244,7 +244,7 @@ public class CezarsAmulet implements Listener {
             for (Player p : Bukkit.getOnlinePlayers()) {
                 frozen.remove(p.getUniqueId());
             }
-        }, 20L * 10); // 15 seconds
+        }, 20L * 10); // 10 seconds
     }
 
     @EventHandler

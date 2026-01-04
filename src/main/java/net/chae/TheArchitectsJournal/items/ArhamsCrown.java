@@ -17,7 +17,6 @@ import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.inventory.*;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -27,10 +26,6 @@ import org.bukkit.potion.PotionEffectType;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
-
-import static org.bukkit.event.entity.EntityDamageEvent.DamageCause.SONIC_BOOM;
-
 
 @SuppressWarnings("UnstableAPIUsage")
 
@@ -49,6 +44,7 @@ public class ArhamsCrown implements Listener {
         this.ARHAMSCROWN_RECIPE_KEY = new NamespacedKey(plugin, "arhamscrown_recipe");
         this.ARHAMSCROWNCOMPLETE_RECIPE_KEY = new NamespacedKey(plugin, "arhamscrowncomplete_recipe");
 
+        //warden immunity
         startWardenProtectionTask();
 
     }
@@ -63,7 +59,6 @@ public class ArhamsCrown implements Listener {
                 crownWearers.put(player.getUniqueId(), hasCrown);
 
                 if (hasCrown) {
-                    // clear warden targets on crown wearers
                     for (Entity nearby : player.getNearbyEntities(67, 67, 67)) {
                         if (nearby instanceof Warden warden && warden.getTarget() == player) {
                             warden.setTarget(null);
@@ -132,12 +127,12 @@ public class ArhamsCrown implements Listener {
     public ItemStack ArhamsCrownComplete() {
         ItemStack crown = ItemStack.of(Material.STICK);
 
-        // Attributes (FIXED NamespacedKey - uses plugin instance)
+        // Attributes
         ItemAttributeModifiers.Builder builder = ItemAttributeModifiers.itemAttributes();
+
         builder.addModifier(Attribute.MAX_HEALTH,
                 new AttributeModifier(new NamespacedKey(plugin, "max_health"), 20,
                         AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.HEAD));
-
         builder.addModifier(Attribute.ATTACK_KNOCKBACK,
                 new AttributeModifier(new NamespacedKey(plugin, "attack_knockback"), 1.5,
                         AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.HEAD));
@@ -147,7 +142,6 @@ public class ArhamsCrown implements Listener {
         builder.addModifier(Attribute.KNOCKBACK_RESISTANCE,
                 new AttributeModifier(new NamespacedKey(plugin, "knockback_resistance"), 1,
                         AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.HEAD));
-
         builder.addModifier(Attribute.ATTACK_DAMAGE,
                 new AttributeModifier(new NamespacedKey(plugin, "attack_damage"), 6,
                         AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.HEAD));
@@ -155,8 +149,6 @@ public class ArhamsCrown implements Listener {
         crown.setData(DataComponentTypes.ATTRIBUTE_MODIFIERS, builder.build());
 
         crown.setData(DataComponentTypes.ITEM_MODEL, Key.key("chae", "arhams_crown"));
-
-        // descriptions
 
         // Hide default attribute tooltip
         TooltipDisplay.Builder tooltipBuilder = TooltipDisplay.tooltipDisplay();
@@ -167,6 +159,7 @@ public class ArhamsCrown implements Listener {
         crown.setData(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
         crown.setData(DataComponentTypes.EQUIPPABLE, Equippable.equippable(EquipmentSlot.HEAD).build());
         crown.setData(DataComponentTypes.MAX_STACK_SIZE, 1);
+
         return crown;
     }
 
@@ -209,7 +202,7 @@ public class ArhamsCrown implements Listener {
 
         UUID uuid = attacker.getUniqueId();
         long now = System.currentTimeMillis();
-        if (sonicCooldowns.getOrDefault(uuid, 0L) > now - 10000) return;
+        if (sonicCooldowns.getOrDefault(uuid, 0L) > now - 10000) return; //10 second CD
 
         ItemStack helmet = attacker.getInventory().getHelmet();
         if (!isArhamsCrown(helmet) || !attacker.getInventory().getItemInMainHand().getType().isAir()) return;
@@ -218,24 +211,23 @@ public class ArhamsCrown implements Listener {
         event.setCancelled(true);
         doSonicBoom(attacker, event.getEntity());
 
-        //DARKNESS PUNCH -----------------------------------------------------------
+        //DARKNESS PUNCH ---------------------------------------------------------------------------
         if (!(event.getEntity() instanceof LivingEntity victim)) return;
 
         // Apply darkness effect to the victim (e.g. 10 seconds, amplifier 0)
         victim.addPotionEffect(new PotionEffect(
-                PotionEffectType.DARKNESS, // darkness effect
-                200,                       // duration in ticks (200 = 10s)
-                0,                         // amplifier (0 = level 1)
-                false,                     // ambient
-                true                       // show particles
+                PotionEffectType.DARKNESS,
+                200,
+                0,
+                true,
+                true
         ));
 
-        // Play warden growl/roar sound for the victim
         victim.getWorld().playSound(
                 victim.getLocation(),
-                Sound.ENTITY_WARDEN_ROAR, // or another warden sound
-                1.0f,                      // volume
-                1.0f                       // pitch
+                Sound.ENTITY_WARDEN_ROAR,
+                1.0f,
+                1.0f
         );
     }
 
