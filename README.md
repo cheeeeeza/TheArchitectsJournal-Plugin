@@ -28,15 +28,13 @@ A lore-driven Minecraft (Paper) plugin that introduces powerful custom items ins
 
 ## Lore
 
-> Eons before the dawn of this great nation, the land was but a realm of ruin, where savage beasts and monstrous hordes ravaged the Overworld. Death cast its shadow upon all who dared to breathe.
+> Eons before the dawn of this great nation, the land was but a realm of ruin, where savage beasts and monstrous hordes ravaged the Overworld. Death casts its shadow upon all who dared to breathe. Yet, from the depths of despair, eight souls rose—born of humble beginnings, destined for grandeur.
+> 
+> Each, in their steadfast resolve, bled rivers of blood, sweat, and tears to master the arts of the craft and mine, to wander far and wide, and to defend one another against the tides of disparity. They sought the hidden lore of the ancients, yearning to unearth the secrets that lay veiled beneath the unknown.
 >
-> Yet, from the depths of despair, eight souls rose—born of humble beginnings, destined for grandeur.
+> From the Heaven's skies, through the fiery depths of the Nether, the Trailblazer, the Catalyst, the Harbinger, the Architect, the Angler, the Dweller, and the Singularity rose as one, casting aside the horrors that plagued this land. However, in their generation’s wake, unity became fragile and the emergence of a traitor had broken their bounds, promising to bring back the realm before their reign.
 >
-> Through blood, sweat, and sacrifice, they mastered the craft and the mine, wandering the realms in search of ancient knowledge. From the skies of Heaven to the depths of the Nether, the Trailblazer, the Catalyst, the Harbinger, the Architect, the Angler, the Dweller, and the Singularity stood as one.
->
-> But unity is fragile. A traitor emerged, and with them, the promise of ruin reborn.
->
-> As the age of the ancients faded, the Realmcrafting Architect of Qamar left behind a single journal—hoping that future scions might reclaim even a fragment of what was lost.
+> With the age of ancients ending and a desperate attempt to preserve the remnants, the Realmcrafting Architect of Qamar left behind a single journal, hoping for the future scions to claw back even a fragment of what was lost.
 
 ## Content Overview
 
@@ -55,20 +53,17 @@ A lore-driven Minecraft (Paper) plugin that introduces powerful custom items ins
 
 ## Crafting & Discovery
 
-The recipes for all items are recorded within **The Architect’s Journal** itself.
+The recipe of every item is available in **the Architect's Journal!** Just keep in mind the recipes wont be easy nor handed over to you on a silver platter- so I'll give you a little hint on how to craft the journal!
 
-However, these recipes are neither simple nor freely given. Knowledge must be earned.
-
-> Among the long-lost scattered pages of the Eight, one paper remains—its glowing ink stubborn to fade:
+> Amongst the long lost scattered pages of the Eight, one paper remains with glowing ink, stubborn to fade:
 >
-> *I watched Hudeen work in silence again today...*
+> *I watched Hudeen work in silence again today.*
 >
-> *Mining a star into a book... only with a humble copper pickaxe did he succeed.*
+> *I do not yet understand what he seeks to achieve- mining a star into a book. He tried countless tools before and labored for days in secrecy, yet only with a humble copper pickaxe did he finally succeed*
 >
-> *Whatever he created was never meant to be unique—only repeatable, away from prying eyes.*
+> *I never understood his true intentions. But I knew that whatever he was trying to make was never meant to be unique- it was meant to be done again, away from the prying eyes of whatever doom looms out there...*
 >
-> — **Licht**
->
+> *-Licht*
 
 ## Built With
 - Java
