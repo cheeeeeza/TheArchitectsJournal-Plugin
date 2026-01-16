@@ -13,7 +13,6 @@ import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -23,10 +22,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
-
 import java.util.*;
-
-import static net.kyori.adventure.text.format.TextColor.color;
 
 @SuppressWarnings("UnstableAPIUsage")
 
@@ -214,11 +210,10 @@ public class LichtsArmlet implements Listener {
         }, 0L, 10L);
     }
 
-    private final Map<UUID, Long> glideCooldown = new HashMap<>();
-    private final Map<UUID, Long> netCooldown = new HashMap<>();
-    private final Map<UUID, Long> ultimateCooldown = new HashMap<>();
-
     //AIR BUCKET CLUTCH AND BOOST ---------------------------------------------------------------------------
+
+    private final Map<UUID, Long> glideCooldown = new HashMap<>();
+
     @EventHandler
     public void onCloudlineGlide(PlayerMoveEvent event) {
         Player player = event.getPlayer();
@@ -246,6 +241,8 @@ public class LichtsArmlet implements Listener {
     }
 
     //AIR NET-----------------------------------------------------------------------------------------------
+
+    private final Map<UUID, Long> netCooldown = new HashMap<>();
 
     @EventHandler
     public void onSkyfishersNet(PlayerInteractEvent event) {
@@ -314,8 +311,10 @@ public class LichtsArmlet implements Listener {
         player.playSound(center, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1f, 0.8f);
     }
 
+    // ULTIMATE (AIRNET BUT FOR PLAYERS) ----------------------------------------------------------
 
-    // ULTIMATE I FORGOT WHAT THIS DOES ----------------------------------------------------------
+    private final Map<UUID, Long> ultimateCooldown = new HashMap<>();
+
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
