@@ -10,8 +10,8 @@ A lore-driven Minecraft (Paper) plugin that introduces powerful custom items ins
 - Event-driven mechanics using the Paper API
 
 ## Gameplay
-- Special items can be obtained through progression and discovery
-- Some abilities activate on right-click, others while held or worn
+- Special items can be obtained through discovery and craft
+- Some abilities activate on right/left-click, others while held, worn, or on-hit
 - Certain effects require items to be held in the main-hand or off-hand
 - Abilities are balanced with cooldowns and visual indicators
 
