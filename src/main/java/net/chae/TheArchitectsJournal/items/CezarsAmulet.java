@@ -23,7 +23,7 @@ import org.bukkit.inventory.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
-import net.chae.TheArchitectsJournal.items.ArhamsCrown;  // Replace with actual class names
+import net.chae.TheArchitectsJournal.items.ArhamsCrown;
 import net.chae.TheArchitectsJournal.items.LichtsArmlet;
 import net.chae.TheArchitectsJournal.items.YevasWand;
 import net.chae.TheArchitectsJournal.items.YukimurasGreatsword;
@@ -41,7 +41,6 @@ import java.util.UUID;
 public class CezarsAmulet implements Listener {
     private final JavaPlugin plugin;
 
-    private NamespacedKey CEZARSAMULET_RECIPE_KEY;
     private NamespacedKey CEZARSAMULETCOMPLETE_RECIPE_KEY;
 
     private ArhamsCrown crown;
@@ -98,7 +97,7 @@ public class CezarsAmulet implements Listener {
 
     public void registerCezarsAmuletRecipeComplete() {
         ShapelessRecipe recipe = new ShapelessRecipe(CEZARSAMULETCOMPLETE_RECIPE_KEY, CezarsAmuletComplete());
-        recipe.addIngredient(new RecipeChoice.ExactChoice(crown.ArhamsCrownComplete()));  // Adjust method name
+        recipe.addIngredient(new RecipeChoice.ExactChoice(crown.ArhamsCrownComplete()));
         recipe.addIngredient(new RecipeChoice.ExactChoice(armlet.LichtsArmletComplete()));
         recipe.addIngredient(new RecipeChoice.ExactChoice(wand.YevasWandComplete()));
         recipe.addIngredient(new RecipeChoice.ExactChoice(greatsword.YukimurasGreatswordComplete()));
@@ -160,7 +159,7 @@ public class CezarsAmulet implements Listener {
         if (isCezarsAmulet(newOffhand)) {
             giveCezarsAmuletEffect(player);
         } else {
-            // Restart task if no one holds it anymore (optional robustness)
+            // restart task when off hold
             stopFreezeTask();
             startFreezeTask();
         }
@@ -181,14 +180,14 @@ public class CezarsAmulet implements Listener {
     }
 
 
-    // LANTERN CHECKER -----------------------------------------------------------
+    // AMULET CHECKER -----------------------------------------------------------
     private boolean isCezarsAmulet(ItemStack item) {
         if (item == null) return false;
         Component name = item.getData(DataComponentTypes.ITEM_NAME);
         return name != null && name.equals(Component.text("Cezar's Amulet", NamedTextColor.DARK_PURPLE));
     }
 
-    // AURA FREEZE
+    // AURA FREEZE --------------------------------------------------------------
     private int freezeTaskId = -1;
     public void startFreezeTask() {
         if (freezeTaskId != -1) return;
@@ -214,7 +213,7 @@ public class CezarsAmulet implements Listener {
         }
     }
 
-    // PLAYER UNIVERSAL FREEZE
+    // PLAYER UNIVERSAL FREEZE -------------------------------------------------------
 
     private final Set<UUID> frozen = new HashSet<>();
 

@@ -291,7 +291,7 @@ public class LichtsArmlet implements Listener {
                     // Stronger pull as time progresses
                     double pullStrength = Math.min(0.4 + (task.getTaskId() * 0.02), 0.8);
                     Vector pullVelocity = toCenter.multiply(pullStrength);
-                    pullVelocity.setY(0.3);  // Keep upward momentum
+                    pullVelocity.setY(0.3);
 
                     le.setVelocity(pullVelocity);
                 }

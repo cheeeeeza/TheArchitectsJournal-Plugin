@@ -130,7 +130,7 @@ public class EmmansLantern implements Listener {
         ItemAttributeModifiers.Builder builder = ItemAttributeModifiers.itemAttributes();
 
         builder.addModifier(Attribute.LUCK,
-                new AttributeModifier(new NamespacedKey(plugin, "luck"), 255,
+                new AttributeModifier(new NamespacedKey(plugin, "luck"), 676,
                         AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.OFFHAND));
 
         builder.addModifier(Attribute.BLOCK_INTERACTION_RANGE,
